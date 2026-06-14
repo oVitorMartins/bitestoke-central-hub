@@ -1,18 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  LayoutDashboard,
-  Package,
-  FileBarChart,
-  Settings,
-  LifeBuoy,
-  LogOut,
-  Search,
-  Bell,
-  Grid3x3,
-  Plus,
-  QrCode,
-  TrendingUp,
-} from "lucide-react";
+import { Plus, QrCode, TrendingUp } from "lucide-react";
+import { AppShell } from "@/components/AppShell";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,13 +13,6 @@ export const Route = createFileRoute("/")({
   }),
   component: Dashboard,
 });
-
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", active: true },
-  { icon: Package, label: "Inventário" },
-  { icon: FileBarChart, label: "Relatórios" },
-  { icon: Settings, label: "Configurações" },
-];
 
 const movimentacoes = [
   { ativo: "Notebook Dell XPS 13", id: "#DXP-1029", acao: "TRANSFERÊNCIA", acaoTone: "info", destino: "Setor Financeiro", data: "Hoje, 10:45" },
