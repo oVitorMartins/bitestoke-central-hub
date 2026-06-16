@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus, QrCode, TrendingUp } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 
@@ -88,7 +88,10 @@ function Dashboard() {
 
       {/* Action cards */}
       <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <button className="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-primary p-5 text-left text-primary-foreground transition-transform hover:scale-[1.01]">
+        <Link
+          to="/inventario/novo"
+          className="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-primary p-5 text-left text-primary-foreground transition-transform hover:scale-[1.01]"
+        >
           <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/20">
             <Plus className="h-5 w-5" />
           </div>
@@ -96,7 +99,7 @@ function Dashboard() {
             <div className="font-semibold">Cadastrar Novo Ativo</div>
             <div className="text-xs text-primary-foreground/60">Adicionar manualmente hardware ou software ao sistema.</div>
           </div>
-        </button>
+        </Link>
         <button className="group flex items-center gap-4 rounded-2xl border bg-card p-5 text-left transition-colors hover:bg-muted">
           <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-muted">
             <QrCode className="h-5 w-5" />

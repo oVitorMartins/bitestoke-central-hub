@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import {
   Info,
@@ -83,7 +83,6 @@ function Select({
 }
 
 function NovoAtivoPage() {
-  const navigate = useNavigate();
   const [status, setStatus] = useState<Status>("Disponível");
   const [categoria, setCategoria] = useState("Computadores / Laptops");
   const [localizacao, setLocalizacao] = useState("Sede Principal - Bloco A");
@@ -252,13 +251,12 @@ function NovoAtivoPage() {
           ↻ Campos obrigatórios marcados com auto-validação
         </p>
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/inventario" })}
+          <Link
+            to="/inventario"
             className="rounded-lg border bg-background px-5 py-2.5 text-sm font-semibold hover:bg-muted"
           >
             Cancelar
-          </button>
+          </Link>
           <button
             type="button"
             className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-semibold text-background hover:opacity-90"
