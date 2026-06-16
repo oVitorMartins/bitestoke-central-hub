@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 
-export const Route = createFileRoute("/inventario")({
+export const Route = createFileRoute("/inventario/")({
   head: () => ({
     meta: [
       { title: "Inventário — AssetTrack IT" },
