@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as InventarioRouteImport } from './routes/inventario'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InventarioNovoRouteImport } from './routes/inventario.novo'
 
 const InventarioRoute = InventarioRouteImport.update({
   id: '/inventario',
@@ -22,31 +23,39 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InventarioNovoRoute = InventarioNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => InventarioRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/inventario': typeof InventarioRoute
+  '/inventario': typeof InventarioRouteWithChildren
+  '/inventario/novo': typeof InventarioNovoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/inventario': typeof InventarioRoute
+  '/inventario': typeof InventarioRouteWithChildren
+  '/inventario/novo': typeof InventarioNovoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/inventario': typeof InventarioRoute
+  '/inventario': typeof InventarioRouteWithChildren
+  '/inventario/novo': typeof InventarioNovoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/inventario'
+  fullPaths: '/' | '/inventario' | '/inventario/novo'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/inventario'
-  id: '__root__' | '/' | '/inventario'
+  to: '/' | '/inventario' | '/inventario/novo'
+  id: '__root__' | '/' | '/inventario' | '/inventario/novo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  InventarioRoute: typeof InventarioRoute
+  InventarioRoute: typeof InventarioRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +74,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inventario/novo': {
+      id: '/inventario/novo'
+      path: '/novo'
+      fullPath: '/inventario/novo'
+      preLoaderRoute: typeof InventarioNovoRouteImport
+      parentRoute: typeof InventarioRoute
+    }
   }
 }
 
+interface InventarioRouteChildren {
+  InventarioNovoRoute: typeof InventarioNovoRoute
+}
+
+const InventarioRouteChildren: InventarioRouteChildren = {
+  InventarioNovoRoute: InventarioNovoRoute,
+}
+
+const InventarioRouteWithChildren = InventarioRoute._addFileChildren(
+  InventarioRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  InventarioRoute: InventarioRoute,
+  InventarioRoute: InventarioRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

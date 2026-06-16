@@ -62,9 +62,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             </nav>
           </div>
           <div className="space-y-3">
-            <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90">
+            <Link to="/inventario/novo" className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90">
               <Plus className="h-4 w-4" /> Novo Ativo
-            </button>
+            </Link>
             <div className="space-y-1 pt-2">
               <a href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-muted">
                 <LifeBuoy className="h-4 w-4" /> Suporte
