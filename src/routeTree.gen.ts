@@ -9,64 +9,58 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as InventarioRouteImport } from './routes/inventario'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InventarioIndexRouteImport } from './routes/inventario.index'
 import { Route as InventarioNovoRouteImport } from './routes/inventario.novo'
 
-const InventarioRoute = InventarioRouteImport.update({
-  id: '/inventario',
-  path: '/inventario',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InventarioIndexRoute = InventarioIndexRouteImport.update({
+  id: '/inventario/',
+  path: '/inventario/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InventarioNovoRoute = InventarioNovoRouteImport.update({
-  id: '/novo',
-  path: '/novo',
-  getParentRoute: () => InventarioRoute,
+  id: '/inventario/novo',
+  path: '/inventario/novo',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/inventario': typeof InventarioRouteWithChildren
   '/inventario/novo': typeof InventarioNovoRoute
+  '/inventario/': typeof InventarioIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/inventario': typeof InventarioRouteWithChildren
   '/inventario/novo': typeof InventarioNovoRoute
+  '/inventario': typeof InventarioIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/inventario': typeof InventarioRouteWithChildren
   '/inventario/novo': typeof InventarioNovoRoute
+  '/inventario/': typeof InventarioIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/inventario' | '/inventario/novo'
+  fullPaths: '/' | '/inventario/novo' | '/inventario/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/inventario' | '/inventario/novo'
-  id: '__root__' | '/' | '/inventario' | '/inventario/novo'
+  to: '/' | '/inventario/novo' | '/inventario'
+  id: '__root__' | '/' | '/inventario/novo' | '/inventario/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  InventarioRoute: typeof InventarioRouteWithChildren
+  InventarioNovoRoute: typeof InventarioNovoRoute
+  InventarioIndexRoute: typeof InventarioIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/inventario': {
-      id: '/inventario'
-      path: '/inventario'
-      fullPath: '/inventario'
-      preLoaderRoute: typeof InventarioRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -74,31 +68,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inventario/': {
+      id: '/inventario/'
+      path: '/inventario'
+      fullPath: '/inventario/'
+      preLoaderRoute: typeof InventarioIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/inventario/novo': {
       id: '/inventario/novo'
-      path: '/novo'
+      path: '/inventario/novo'
       fullPath: '/inventario/novo'
       preLoaderRoute: typeof InventarioNovoRouteImport
-      parentRoute: typeof InventarioRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface InventarioRouteChildren {
-  InventarioNovoRoute: typeof InventarioNovoRoute
-}
-
-const InventarioRouteChildren: InventarioRouteChildren = {
-  InventarioNovoRoute: InventarioNovoRoute,
-}
-
-const InventarioRouteWithChildren = InventarioRoute._addFileChildren(
-  InventarioRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  InventarioRoute: InventarioRouteWithChildren,
+  InventarioNovoRoute: InventarioNovoRoute,
+  InventarioIndexRoute: InventarioIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
