@@ -1,0 +1,101 @@
+import { Laptop, Monitor, Router as RouterIcon, Printer } from "lucide-react";
+
+export type Status = "Em Uso" | "Manutenção" | "Estoque" | "Aguardando Descarte";
+export type Criticidade = "Baixa" | "Média" | "Alta" | "Crítica";
+
+export type Ativo = {
+  id: string;
+  nome: string;
+  specs: string;
+  icon: typeof Laptop;
+  marcaModelo: string;
+  categoria: string;
+  patrimonio: string;
+  serie: string;
+  status: Status;
+  localizacao: string;
+  dataAquisicao: string;
+  valor: string;
+  notaFiscal: string;
+  criticidade: Criticidade;
+  observacoes: string;
+};
+
+export const categorias = ["Notebook", "Monitor", "Rede", "Periféricos"] as const;
+export const statusList: Status[] = ["Em Uso", "Manutenção", "Estoque", "Aguardando Descarte"];
+export const setores = ["TI", "RH", "TI - Almoxarifado", "Operações"] as const;
+
+export const ativos: Ativo[] = [
+  {
+    id: "1",
+    nome: "Notebook Lenovo P15",
+    specs: "Core i9 · 32GB RAM",
+    icon: Laptop,
+    marcaModelo: "Lenovo / ThinkPad P15",
+    categoria: "Notebook",
+    patrimonio: "PAT-2023-001",
+    serie: "SN-LNV-P15-0091",
+    status: "Em Uso",
+    localizacao: "TI",
+    dataAquisicao: "12/03/2023",
+    valor: "R$ 18.450,00",
+    notaFiscal: "NF-998877",
+    criticidade: "Alta",
+    observacoes: "Notebook destinado ao time de engenharia. Possui dock station na estação 12.",
+  },
+  {
+    id: "2",
+    nome: 'Monitor Dell 27"',
+    specs: "4K Resolution · UltraSharp",
+    icon: Monitor,
+    marcaModelo: "Dell / U2723QE",
+    categoria: "Monitor",
+    patrimonio: "PAT-2023-045",
+    serie: "SN-DELL-U27-2231",
+    status: "Manutenção",
+    localizacao: "RH",
+    dataAquisicao: "05/07/2023",
+    valor: "R$ 4.290,00",
+    notaFiscal: "NF-101545",
+    criticidade: "Média",
+    observacoes: "Em manutenção devido a pixels travados na região superior direita.",
+  },
+  {
+    id: "3",
+    nome: "Cisco ISR 4331",
+    specs: "Roteador Enterprise",
+    icon: RouterIcon,
+    marcaModelo: "Cisco / ISR 4331",
+    categoria: "Rede",
+    patrimonio: "PAT-2023-089",
+    serie: "SN-CSC-ISR-7781",
+    status: "Estoque",
+    localizacao: "TI - Almoxarifado",
+    dataAquisicao: "18/01/2023",
+    valor: "R$ 22.900,00",
+    notaFiscal: "NF-554120",
+    criticidade: "Crítica",
+    observacoes: "Reserva técnica para a filial centro. Lacre original intacto.",
+  },
+  {
+    id: "4",
+    nome: "HP LaserJet Pro",
+    specs: "Impressora Multifuncional",
+    icon: Printer,
+    marcaModelo: "HP / LaserJet Pro M428",
+    categoria: "Periféricos",
+    patrimonio: "PAT-2022-112",
+    serie: "SN-HP-LJP-4412",
+    status: "Aguardando Descarte",
+    localizacao: "Operações",
+    dataAquisicao: "22/09/2022",
+    valor: "R$ 2.180,00",
+    notaFiscal: "NF-330021",
+    criticidade: "Baixa",
+    observacoes: "Equipamento depreciado e com fusor defeituoso. Aguardando coleta para descarte.",
+  },
+];
+
+export function getAtivo(id: string): Ativo | undefined {
+  return ativos.find((a) => a.id === id);
+}
