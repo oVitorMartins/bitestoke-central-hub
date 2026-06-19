@@ -225,7 +225,7 @@ function InventarioPage() {
         </div>
       </section>
 
-      {/* QR Modal */}
+      {/* Etiqueta de Patrimônio Modal */}
       {qrAtivo && (
         <div
           className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4 backdrop-blur-sm"
@@ -242,30 +242,39 @@ function InventarioPage() {
             >
               <X className="h-4 w-4" />
             </button>
-            <h3 className="text-lg font-bold">QR Code do Ativo</h3>
+            <h3 className="text-lg font-bold">Etiqueta de Patrimônio</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Escaneie para acessar os detalhes deste ativo.
+              Escaneie o QR Code para acessar os detalhes deste ativo.
             </p>
-            <div className="mt-5 grid place-items-center rounded-xl border bg-background p-5">
+            <div className="mt-5 grid place-items-center rounded-xl border bg-white p-5">
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(
-                  `${qrAtivo.patrimonio}|${qrAtivo.nome}`,
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                  qrAtivo.patrimonio,
                 )}`}
                 alt={`QR Code ${qrAtivo.patrimonio}`}
-                width={220}
-                height={220}
+                width={150}
+                height={150}
               />
             </div>
             <div className="mt-4 space-y-1 text-center">
-              <div className="font-semibold">{qrAtivo.nome}</div>
+              <div className="font-semibold text-foreground">{qrAtivo.nome}</div>
               <div className="font-mono text-xs text-muted-foreground">{qrAtivo.patrimonio}</div>
             </div>
-            <button
-              onClick={() => setQrAtivo(null)}
-              className="mt-5 w-full rounded-lg bg-foreground py-2.5 text-sm font-semibold text-background hover:opacity-90"
-            >
-              Fechar
-            </button>
+            <div className="mt-5 flex items-center gap-2">
+              <button
+                onClick={() => setQrAtivo(null)}
+                className="flex-1 rounded-lg border bg-background py-2.5 text-sm font-semibold hover:bg-muted"
+              >
+                Fechar
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-foreground py-2.5 text-sm font-semibold text-background hover:opacity-90"
+              >
+                <Printer className="h-4 w-4" />
+                Imprimir Etiqueta
+              </button>
+            </div>
           </div>
         </div>
       )}
