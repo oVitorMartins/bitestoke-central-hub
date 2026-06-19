@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import {
   Info,
@@ -10,7 +10,8 @@ import {
   Calendar,
   ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/inventario/novo")({
   component: NovoAtivoPage,
@@ -83,13 +84,34 @@ function Select({
 }
 
 function NovoAtivoPage() {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<Status>("Disponível");
   const [categoria, setCategoria] = useState("Computadores / Laptops");
   const [localizacao, setLocalizacao] = useState("Sede Principal - Bloco A");
   const [criticidade, setCriticidade] = useState("Baixa");
 
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const entries = Object.fromEntries(fd.entries()) as Record<string, string>;
+    const payload = {
+      ...entries,
+      status,
+      categoria,
+      localizacao,
+      criticidade,
+    };
+    // eslint-disable-next-line no-console
+    console.log("Novo ativo (mock):", payload);
+    toast.success("Ativo cadastrado com sucesso!", {
+      description: entries.nome || "Registro salvo no inventário.",
+    });
+    navigate({ to: "/inventario" });
+  }
+
   return (
     <AppShell>
+      <form onSubmit={handleSubmit}>
       {/* Breadcrumb + title */}
       <div className="mb-6">
         <nav className="mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -108,19 +130,20 @@ function NovoAtivoPage() {
           <Card icon={Info} title="Informações Básicas">
             <div className="space-y-4">
               <Field label="Nome do Ativo">
-                <input className={inputCls} placeholder="Ex: Macbook Pro 16' M3" />
+                <input name="nome" className={inputCls} placeholder="Ex: Macbook Pro 16' M3" />
               </Field>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Marca / Modelo">
-                  <input className={`${inputCls} font-mono`} placeholder="Ex: Apple / A2780" />
+                  <input name="marcaModelo" className={`${inputCls} font-mono`} placeholder="Ex: Apple / A2780" />
                 </Field>
                 <Field label="Número de Série (S/N)">
-                  <input className={`${inputCls} font-mono`} placeholder="EX: C02XG1..." />
+                  <input name="serie" className={`${inputCls} font-mono`} placeholder="EX: C02XG1..." />
                 </Field>
               </div>
               <Field label="Código de Patrimônio">
                 <div className="flex gap-2">
                   <input
+                    name="patrimonio"
                     className={`${inputCls} flex-1 font-mono`}
                     placeholder="Ex: AST-2024-001"
                   />
@@ -258,13 +281,14 @@ function NovoAtivoPage() {
             Cancelar
           </Link>
           <button
-            type="button"
+            type="submit"
             className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-semibold text-background hover:opacity-90"
           >
             Salvar Ativo
           </button>
         </div>
       </div>
+      </form>
     </AppShell>
   );
 }
