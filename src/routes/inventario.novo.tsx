@@ -129,19 +129,20 @@ function NovoAtivoPage() {
           <Card icon={Info} title="Informações Básicas">
             <div className="space-y-4">
               <Field label="Nome do Ativo">
-                <input className={inputCls} placeholder="Ex: Macbook Pro 16' M3" />
+                <input name="nome" className={inputCls} placeholder="Ex: Macbook Pro 16' M3" />
               </Field>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Marca / Modelo">
-                  <input className={`${inputCls} font-mono`} placeholder="Ex: Apple / A2780" />
+                  <input name="marcaModelo" className={`${inputCls} font-mono`} placeholder="Ex: Apple / A2780" />
                 </Field>
                 <Field label="Número de Série (S/N)">
-                  <input className={`${inputCls} font-mono`} placeholder="EX: C02XG1..." />
+                  <input name="serie" className={`${inputCls} font-mono`} placeholder="EX: C02XG1..." />
                 </Field>
               </div>
               <Field label="Código de Patrimônio">
                 <div className="flex gap-2">
                   <input
+                    name="patrimonio"
                     className={`${inputCls} flex-1 font-mono`}
                     placeholder="Ex: AST-2024-001"
                   />
