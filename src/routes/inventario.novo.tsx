@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import {
   Info,
@@ -10,7 +10,8 @@ import {
   Calendar,
   ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/inventario/novo")({
   component: NovoAtivoPage,
