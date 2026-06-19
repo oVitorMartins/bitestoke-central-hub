@@ -280,13 +280,14 @@ function NovoAtivoPage() {
             Cancelar
           </Link>
           <button
-            type="button"
+            type="submit"
             className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-semibold text-background hover:opacity-90"
           >
             Salvar Ativo
           </button>
         </div>
       </div>
+      </form>
     </AppShell>
   );
 }
