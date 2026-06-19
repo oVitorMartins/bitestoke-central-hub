@@ -84,13 +84,33 @@ function Select({
 }
 
 function NovoAtivoPage() {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<Status>("Disponível");
   const [categoria, setCategoria] = useState("Computadores / Laptops");
   const [localizacao, setLocalizacao] = useState("Sede Principal - Bloco A");
   const [criticidade, setCriticidade] = useState("Baixa");
 
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const payload = {
+      ...Object.fromEntries(fd.entries()),
+      status,
+      categoria,
+      localizacao,
+      criticidade,
+    };
+    // eslint-disable-next-line no-console
+    console.log("Novo ativo (mock):", payload);
+    toast.success("Ativo cadastrado com sucesso!", {
+      description: payload.nome ? String(payload.nome) : "Registro salvo no inventário.",
+    });
+    navigate({ to: "/inventario" });
+  }
+
   return (
     <AppShell>
+      <form onSubmit={handleSubmit}>
       {/* Breadcrumb + title */}
       <div className="mb-6">
         <nav className="mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
