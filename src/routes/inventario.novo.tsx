@@ -89,6 +89,15 @@ function NovoAtivoPage() {
   const [categoria, setCategoria] = useState("Computadores / Laptops");
   const [localizacao, setLocalizacao] = useState("Sede Principal - Bloco A");
   const [criticidade, setCriticidade] = useState("Baixa");
+  const [alugado, setAlugado] = useState(false);
+  const [fornecedor, setFornecedor] = useState("Locaweb Corp");
+
+  const fornecedores = [
+    "Locaweb Corp",
+    "Arklok Outsourcing",
+    "Simpress",
+    "Fornecedor Hospitalar SP",
+  ];
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -100,6 +109,8 @@ function NovoAtivoPage() {
       categoria,
       localizacao,
       criticidade,
+      alugado,
+      fornecedor: alugado ? fornecedor : null,
     };
     // eslint-disable-next-line no-console
     console.log("Novo ativo (mock):", payload);
@@ -182,8 +193,35 @@ function NovoAtivoPage() {
                 </Field>
               </div>
               <Field label="Número da Nota Fiscal / Contrato">
-                <input className={inputCls} placeholder="Ex: NF-123456 / CTR-2024-01" />
+                <input
+                  className={inputCls}
+                  placeholder={
+                    alugado
+                      ? "Ex: Número do Contrato de Locação"
+                      : "Ex: NF-123456 / CTR-2024-01"
+                  }
+                />
               </Field>
+              <label className="flex items-center gap-2.5 pt-1 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={alugado}
+                  onChange={(e) => setAlugado(e.target.checked)}
+                  className="h-4 w-4 rounded border-border accent-violet"
+                />
+                <span className="text-sm font-semibold text-foreground">
+                  Este ativo é alugado?
+                </span>
+              </label>
+              {alugado && (
+                <Field label="Empresa Locadora / Fornecedor">
+                  <Select
+                    value={fornecedor}
+                    onChange={setFornecedor}
+                    options={fornecedores}
+                  />
+                </Field>
+              )}
             </div>
           </Card>
 

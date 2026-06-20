@@ -97,12 +97,21 @@ function EditarAtivoPage() {
   const [categoria, setCategoria] = useState(ativo.categoria);
   const [localizacao, setLocalizacao] = useState(ativo.localizacao);
   const [criticidade, setCriticidade] = useState<string>(ativo.criticidade);
+  const [alugado, setAlugado] = useState(false);
+  const [fornecedor, setFornecedor] = useState("Locaweb Corp");
+
+  const fornecedores = [
+    "Locaweb Corp",
+    "Arklok Outsourcing",
+    "Simpress",
+    "Fornecedor Hospitalar SP",
+  ];
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const entries = Object.fromEntries(fd.entries()) as Record<string, string>;
-    const payload = { ...entries, status, categoria, localizacao, criticidade };
+    const payload = { ...entries, status, categoria, localizacao, criticidade, alugado, fornecedor: alugado ? fornecedor : null };
     // eslint-disable-next-line no-console
     console.log("Ativo atualizado (mock):", payload);
     toast.success("Ativo atualizado com sucesso!", {
@@ -174,8 +183,37 @@ function EditarAtivoPage() {
                   </Field>
                 </div>
                 <Field label="Número da Nota Fiscal / Contrato">
-                  <input name="notaFiscal" defaultValue={ativo.notaFiscal} className={inputCls} />
+                  <input
+                    name="notaFiscal"
+                    defaultValue={ativo.notaFiscal}
+                    className={inputCls}
+                    placeholder={
+                      alugado
+                        ? "Ex: Número do Contrato de Locação"
+                        : "Ex: NF-123456 / CTR-2024-01"
+                    }
+                  />
                 </Field>
+                <label className="flex items-center gap-2.5 pt-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={alugado}
+                    onChange={(e) => setAlugado(e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-violet"
+                  />
+                  <span className="text-sm font-semibold text-foreground">
+                    Este ativo é alugado?
+                  </span>
+                </label>
+                {alugado && (
+                  <Field label="Empresa Locadora / Fornecedor">
+                    <Select
+                      value={fornecedor}
+                      onChange={setFornecedor}
+                      options={fornecedores}
+                    />
+                  </Field>
+                )}
               </div>
             </Card>
 
