@@ -89,6 +89,15 @@ function NovoAtivoPage() {
   const [categoria, setCategoria] = useState("Computadores / Laptops");
   const [localizacao, setLocalizacao] = useState("Sede Principal - Bloco A");
   const [criticidade, setCriticidade] = useState("Baixa");
+  const [alugado, setAlugado] = useState(false);
+  const [fornecedor, setFornecedor] = useState("Locaweb Corp");
+
+  const fornecedores = [
+    "Locaweb Corp",
+    "Arklok Outsourcing",
+    "Simpress",
+    "Fornecedor Hospitalar SP",
+  ];
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
