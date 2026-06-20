@@ -21,6 +21,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { toast } from "sonner";
 import {
   ativos as ativosMock,
   categorias,
@@ -126,7 +127,13 @@ function InventarioPage() {
             Visualize e gerencie todos os ativos de <span className="text-info">TI</span> da corporação.
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted">
+        <button
+          onClick={() => {
+            toast.info("Exportando inventário para Excel (CSV)...");
+            setTimeout(() => toast.success("Download concluído com sucesso!"), 1000);
+          }}
+          className="inline-flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted"
+        >
           <Download className="h-4 w-4" /> Exportar
         </button>
       </div>
