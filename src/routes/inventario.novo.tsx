@@ -109,6 +109,8 @@ function NovoAtivoPage() {
       categoria,
       localizacao,
       criticidade,
+      alugado,
+      fornecedor: alugado ? fornecedor : null,
     };
     // eslint-disable-next-line no-console
     console.log("Novo ativo (mock):", payload);
