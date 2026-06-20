@@ -7,10 +7,10 @@ import {
   Tag,
   Camera,
   QrCode,
-  Calendar,
   ChevronDown,
+  X,
 } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useState, useRef, type FormEvent, type ChangeEvent } from "react";
 import { toast } from "sonner";
 import { getAtivo } from "@/lib/ativos";
 
@@ -26,17 +26,32 @@ export const Route = createFileRoute("/inventario/editar/$id")({
 const statusOptions = ["Disponível", "Em Uso", "Manutenção", "Baixado"] as const;
 type Status = (typeof statusOptions)[number];
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  required,
+  error,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  error?: string | null;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-semibold text-foreground">{label}</label>
+      <label className="block text-sm font-semibold text-foreground">
+        {label} {required && <span className="text-danger">*</span>}
+      </label>
       {children}
+      {error && <p className="text-xs font-medium text-danger">{error}</p>}
     </div>
   );
 }
 
-const inputCls =
-  "w-full rounded-lg border bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/70 focus:border-info focus:outline-none";
+const inputBase =
+  "w-full rounded-lg border bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/70 focus:outline-none";
+const inputCls = `${inputBase} focus:border-info`;
+const inputErrorCls = `${inputBase} border-danger focus:border-danger`;
 
 function Card({
   icon: Icon,
@@ -62,18 +77,21 @@ function Select({
   value,
   onChange,
   options,
+  hasError,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  hasError?: boolean;
 }) {
   return (
     <div className="relative">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`${inputCls} appearance-none pr-9`}
+        className={`${hasError ? inputErrorCls : inputCls} appearance-none pr-9`}
       >
+        <option value="">Selecione...</option>
         {options.map((o) => (
           <option key={o}>{o}</option>
         ))}
@@ -89,16 +107,41 @@ function mapStatus(s: string): Status {
   return "Disponível";
 }
 
+function formatBRL(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+function parseDigits(s: string): number {
+  const d = s.replace(/\D/g, "");
+  return d ? parseInt(d, 10) : 0;
+}
+
+// "12/03/2024" or "R$ 1.234,56" → numbers
+function initialCentsFromValor(v: string): number {
+  return parseDigits(v);
+}
+// Convert "DD/MM/AAAA" to "AAAA-MM-DD" for <input type="date">
+function toISODate(s: string): string {
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+}
+
 function EditarAtivoPage() {
   const navigate = useNavigate();
   const { ativo } = Route.useLoaderData();
 
-  const [status, setStatus] = useState<Status>(mapStatus(ativo.status));
+  const [nome, setNome] = useState(ativo.nome);
+  const [patrimonio, setPatrimonio] = useState(ativo.patrimonio);
+  const [status, setStatus] = useState<Status | "">(mapStatus(ativo.status));
   const [categoria, setCategoria] = useState(ativo.categoria);
   const [localizacao, setLocalizacao] = useState(ativo.localizacao);
   const [criticidade, setCriticidade] = useState<string>(ativo.criticidade);
   const [alugado, setAlugado] = useState(false);
   const [fornecedor, setFornecedor] = useState("Locaweb Corp");
+  const [valorCents, setValorCents] = useState(initialCentsFromValor(ativo.valor));
+  const [dataAquisicao, setDataAquisicao] = useState(toISODate(ativo.dataAquisicao));
+  const [foto, setFoto] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const fornecedores = [
     "Locaweb Corp",
@@ -107,22 +150,64 @@ function EditarAtivoPage() {
     "Fornecedor Hospitalar SP",
   ];
 
+  function onValorChange(e: ChangeEvent<HTMLInputElement>) {
+    setValorCents(parseDigits(e.target.value));
+  }
+
+  function onFotoChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!/^image\/(jpe?g|png)$/i.test(file.type)) {
+      toast.error("Formato inválido", { description: "Selecione um arquivo .jpg ou .png." });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setFoto(typeof reader.result === "string" ? reader.result : null);
+    reader.readAsDataURL(file);
+  }
+
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const newErrors: Record<string, string> = {};
+    if (!nome.trim()) newErrors.nome = "Informe o nome do ativo.";
+    if (!patrimonio.trim()) newErrors.patrimonio = "Informe o código de patrimônio.";
+    if (!categoria) newErrors.categoria = "Selecione a categoria.";
+    if (!localizacao) newErrors.localizacao = "Selecione a localização.";
+    if (!status) newErrors.status = "Selecione o status atual.";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error("Preencha os campos obrigatórios.", {
+        description: "Revise os campos destacados em vermelho.",
+      });
+      return;
+    }
+    setErrors({});
+
     const fd = new FormData(e.currentTarget);
     const entries = Object.fromEntries(fd.entries()) as Record<string, string>;
-    const payload = { ...entries, status, categoria, localizacao, criticidade, alugado, fornecedor: alugado ? fornecedor : null };
+    const payload = {
+      ...entries,
+      nome,
+      patrimonio,
+      status,
+      categoria,
+      localizacao,
+      criticidade,
+      alugado,
+      fornecedor: alugado ? fornecedor : null,
+      valor: valorCents / 100,
+      dataAquisicao,
+    };
     // eslint-disable-next-line no-console
     console.log("Ativo atualizado (mock):", payload);
-    toast.success("Ativo atualizado com sucesso!", {
-      description: entries.nome || ativo.nome,
-    });
+    toast.success("Ativo atualizado com sucesso!", { description: nome });
     navigate({ to: "/inventario" });
   }
 
   return (
     <AppShell>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         <div className="mb-6">
           <nav className="mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
             <Link to="/inventario" className="hover:text-foreground">Inventário</Link>
@@ -139,8 +224,12 @@ function EditarAtivoPage() {
           <div className="space-y-5">
             <Card icon={Info} title="Informações Básicas">
               <div className="space-y-4">
-                <Field label="Nome do Ativo">
-                  <input name="nome" defaultValue={ativo.nome} className={inputCls} />
+                <Field label="Nome do Ativo" required error={errors.nome}>
+                  <input
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    className={errors.nome ? inputErrorCls : inputCls}
+                  />
                 </Field>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Marca / Modelo">
@@ -150,12 +239,12 @@ function EditarAtivoPage() {
                     <input name="serie" defaultValue={ativo.serie} className={`${inputCls} font-mono`} />
                   </Field>
                 </div>
-                <Field label="Código de Patrimônio">
+                <Field label="Código de Patrimônio" required error={errors.patrimonio}>
                   <div className="flex gap-2">
                     <input
-                      name="patrimonio"
-                      defaultValue={ativo.patrimonio}
-                      className={`${inputCls} flex-1 font-mono`}
+                      value={patrimonio}
+                      onChange={(e) => setPatrimonio(e.target.value)}
+                      className={`${errors.patrimonio ? inputErrorCls : inputCls} flex-1 font-mono`}
                     />
                     <button
                       type="button"
@@ -173,13 +262,21 @@ function EditarAtivoPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Data de Aquisição">
-                    <div className="relative">
-                      <input name="dataAquisicao" defaultValue={ativo.dataAquisicao} className={inputCls} />
-                      <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    </div>
+                    <input
+                      type="date"
+                      value={dataAquisicao}
+                      onChange={(e) => setDataAquisicao(e.target.value)}
+                      className={inputCls}
+                    />
                   </Field>
                   <Field label="Valor do Ativo">
-                    <input name="valor" defaultValue={ativo.valor} className={inputCls} />
+                    <input
+                      inputMode="numeric"
+                      value={formatBRL(valorCents)}
+                      onChange={onValorChange}
+                      className={inputCls}
+                      placeholder="R$ 0,00"
+                    />
                   </Field>
                 </div>
                 <Field label="Número da Nota Fiscal / Contrato">
@@ -207,11 +304,7 @@ function EditarAtivoPage() {
                 </label>
                 {alugado && (
                   <Field label="Empresa Locadora / Fornecedor">
-                    <Select
-                      value={fornecedor}
-                      onChange={setFornecedor}
-                      options={fornecedores}
-                    />
+                    <Select value={fornecedor} onChange={setFornecedor} options={fornecedores} />
                   </Field>
                 )}
               </div>
@@ -228,31 +321,63 @@ function EditarAtivoPage() {
           </div>
 
           <div className="space-y-5">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+              className="hidden"
+              onChange={onFotoChange}
+            />
             <button
               type="button"
-              className="flex h-[200px] w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border bg-muted/50 text-muted-foreground transition-colors hover:bg-muted"
+              onClick={() => fileRef.current?.click()}
+              className="relative flex h-[200px] w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-dashed border-border bg-muted/50 text-muted-foreground transition-colors hover:bg-muted"
             >
-              <Camera className="h-7 w-7" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider">Adicionar Foto</span>
+              {foto ? (
+                <>
+                  <img src={foto} alt="Preview do ativo" className="absolute inset-0 h-full w-full object-cover" />
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFoto(null);
+                      if (fileRef.current) fileRef.current.value = "";
+                    }}
+                    className="absolute right-2 top-2 z-10 grid h-7 w-7 cursor-pointer place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                    aria-label="Remover foto"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Camera className="h-7 w-7" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider">Adicionar Foto</span>
+                  <span className="text-[10px] text-muted-foreground/70">JPG ou PNG</span>
+                </>
+              )}
             </button>
 
             <Card icon={Tag} title="Classificação">
               <div className="space-y-4">
-                <Field label="Categoria">
+                <Field label="Categoria" required error={errors.categoria}>
                   <Select
                     value={categoria}
                     onChange={setCategoria}
+                    hasError={!!errors.categoria}
                     options={["Notebook", "Monitor", "Rede", "Periféricos", "Mobiliário", "Outros"]}
                   />
                 </Field>
-                <Field label="Localização">
+                <Field label="Localização" required error={errors.localizacao}>
                   <Select
                     value={localizacao}
                     onChange={setLocalizacao}
+                    hasError={!!errors.localizacao}
                     options={["TI", "RH", "TI - Almoxarifado", "Operações", "Sede Principal - Bloco A"]}
                   />
                 </Field>
-                <Field label="Status Atual">
+                <Field label="Status Atual" required error={errors.status}>
                   <div className="grid grid-cols-2 gap-2.5">
                     {statusOptions.map((s) => {
                       const active = status === s;
@@ -264,7 +389,9 @@ function EditarAtivoPage() {
                           className={`rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors ${
                             active
                               ? "border-violet/60 bg-violet/15 text-foreground"
-                              : "border-border bg-background text-muted-foreground hover:bg-muted"
+                              : errors.status
+                                ? "border-danger/60 bg-background text-muted-foreground hover:bg-muted"
+                                : "border-border bg-background text-muted-foreground hover:bg-muted"
                           }`}
                         >
                           {s}
@@ -286,7 +413,9 @@ function EditarAtivoPage() {
         </div>
 
         <div className="mt-6 flex items-center justify-between border-t pt-5">
-          <p className="text-xs text-muted-foreground">↻ Campos obrigatórios marcados com auto-validação</p>
+          <p className="text-xs text-muted-foreground">
+            ↻ Campos obrigatórios marcados com <span className="text-danger">*</span>
+          </p>
           <div className="flex items-center gap-3">
             <Link
               to="/inventario"
