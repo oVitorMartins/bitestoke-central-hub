@@ -193,8 +193,35 @@ function NovoAtivoPage() {
                 </Field>
               </div>
               <Field label="Número da Nota Fiscal / Contrato">
-                <input className={inputCls} placeholder="Ex: NF-123456 / CTR-2024-01" />
+                <input
+                  className={inputCls}
+                  placeholder={
+                    alugado
+                      ? "Ex: Número do Contrato de Locação"
+                      : "Ex: NF-123456 / CTR-2024-01"
+                  }
+                />
               </Field>
+              <label className="flex items-center gap-2.5 pt-1 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={alugado}
+                  onChange={(e) => setAlugado(e.target.checked)}
+                  className="h-4 w-4 rounded border-border accent-violet"
+                />
+                <span className="text-sm font-semibold text-foreground">
+                  Este ativo é alugado?
+                </span>
+              </label>
+              {alugado && (
+                <Field label="Empresa Locadora / Fornecedor">
+                  <Select
+                    value={fornecedor}
+                    onChange={setFornecedor}
+                    options={fornecedores}
+                  />
+                </Field>
+              )}
             </div>
           </Card>
 
