@@ -97,6 +97,15 @@ function EditarAtivoPage() {
   const [categoria, setCategoria] = useState(ativo.categoria);
   const [localizacao, setLocalizacao] = useState(ativo.localizacao);
   const [criticidade, setCriticidade] = useState<string>(ativo.criticidade);
+  const [alugado, setAlugado] = useState(false);
+  const [fornecedor, setFornecedor] = useState("Locaweb Corp");
+
+  const fornecedores = [
+    "Locaweb Corp",
+    "Arklok Outsourcing",
+    "Simpress",
+    "Fornecedor Hospitalar SP",
+  ];
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
