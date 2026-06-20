@@ -111,7 +111,7 @@ function EditarAtivoPage() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const entries = Object.fromEntries(fd.entries()) as Record<string, string>;
-    const payload = { ...entries, status, categoria, localizacao, criticidade };
+    const payload = { ...entries, status, categoria, localizacao, criticidade, alugado, fornecedor: alugado ? fornecedor : null };
     // eslint-disable-next-line no-console
     console.log("Ativo atualizado (mock):", payload);
     toast.success("Ativo atualizado com sucesso!", {
