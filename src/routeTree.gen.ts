@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as InventarioIndexRouteImport } from './routes/inventario.index'
 import { Route as InventarioNovoRouteImport } from './routes/inventario.novo'
 import { Route as InventarioEditarIdRouteImport } from './routes/inventario.editar.$id'
@@ -17,6 +18,11 @@ import { Route as InventarioEditarIdRouteImport } from './routes/inventario.edit
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RelatoriosRoute = RelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InventarioIndexRoute = InventarioIndexRouteImport.update({
@@ -37,12 +43,14 @@ const InventarioEditarIdRoute = InventarioEditarIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/relatorios': typeof RelatoriosRoute
   '/inventario/novo': typeof InventarioNovoRoute
   '/inventario/': typeof InventarioIndexRoute
   '/inventario/editar/$id': typeof InventarioEditarIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/relatorios': typeof RelatoriosRoute
   '/inventario/novo': typeof InventarioNovoRoute
   '/inventario': typeof InventarioIndexRoute
   '/inventario/editar/$id': typeof InventarioEditarIdRoute
@@ -50,6 +58,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/relatorios': typeof RelatoriosRoute
   '/inventario/novo': typeof InventarioNovoRoute
   '/inventario/': typeof InventarioIndexRoute
   '/inventario/editar/$id': typeof InventarioEditarIdRoute
@@ -58,14 +67,21 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/relatorios'
     | '/inventario/novo'
     | '/inventario/'
     | '/inventario/editar/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/inventario/novo' | '/inventario' | '/inventario/editar/$id'
+  to:
+    | '/'
+    | '/relatorios'
+    | '/inventario/novo'
+    | '/inventario'
+    | '/inventario/editar/$id'
   id:
     | '__root__'
     | '/'
+    | '/relatorios'
     | '/inventario/novo'
     | '/inventario/'
     | '/inventario/editar/$id'
@@ -73,6 +89,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  RelatoriosRoute: typeof RelatoriosRoute
   InventarioNovoRoute: typeof InventarioNovoRoute
   InventarioIndexRoute: typeof InventarioIndexRoute
   InventarioEditarIdRoute: typeof InventarioEditarIdRoute
@@ -85,6 +102,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/relatorios': {
+      id: '/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof RelatoriosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inventario/': {
@@ -113,6 +137,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  RelatoriosRoute: RelatoriosRoute,
   InventarioNovoRoute: InventarioNovoRoute,
   InventarioIndexRoute: InventarioIndexRoute,
   InventarioEditarIdRoute: InventarioEditarIdRoute,
@@ -120,3 +145,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
