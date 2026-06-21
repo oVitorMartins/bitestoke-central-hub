@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InventarioIndexRouteImport } from './routes/inventario.index'
 import { Route as InventarioNovoRouteImport } from './routes/inventario.novo'
 import { Route as InventarioEditarIdRouteImport } from './routes/inventario.editar.$id'
 
+const RelatoriosRoute = RelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,12 +43,14 @@ const InventarioEditarIdRoute = InventarioEditarIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/relatorios': typeof RelatoriosRoute
   '/inventario/novo': typeof InventarioNovoRoute
   '/inventario/': typeof InventarioIndexRoute
   '/inventario/editar/$id': typeof InventarioEditarIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/relatorios': typeof RelatoriosRoute
   '/inventario/novo': typeof InventarioNovoRoute
   '/inventario': typeof InventarioIndexRoute
   '/inventario/editar/$id': typeof InventarioEditarIdRoute
@@ -50,6 +58,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/relatorios': typeof RelatoriosRoute
   '/inventario/novo': typeof InventarioNovoRoute
   '/inventario/': typeof InventarioIndexRoute
   '/inventario/editar/$id': typeof InventarioEditarIdRoute
@@ -58,14 +67,21 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/relatorios'
     | '/inventario/novo'
     | '/inventario/'
     | '/inventario/editar/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/inventario/novo' | '/inventario' | '/inventario/editar/$id'
+  to:
+    | '/'
+    | '/relatorios'
+    | '/inventario/novo'
+    | '/inventario'
+    | '/inventario/editar/$id'
   id:
     | '__root__'
     | '/'
+    | '/relatorios'
     | '/inventario/novo'
     | '/inventario/'
     | '/inventario/editar/$id'
@@ -73,6 +89,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  RelatoriosRoute: typeof RelatoriosRoute
   InventarioNovoRoute: typeof InventarioNovoRoute
   InventarioIndexRoute: typeof InventarioIndexRoute
   InventarioEditarIdRoute: typeof InventarioEditarIdRoute
@@ -80,6 +97,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/relatorios': {
+      id: '/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof RelatoriosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -113,6 +137,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  RelatoriosRoute: RelatoriosRoute,
   InventarioNovoRoute: InventarioNovoRoute,
   InventarioIndexRoute: InventarioIndexRoute,
   InventarioEditarIdRoute: InventarioEditarIdRoute,
