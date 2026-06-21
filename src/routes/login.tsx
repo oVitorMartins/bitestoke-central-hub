@@ -30,8 +30,44 @@ function LoginPage() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      toast.success("Bem-vindo de volta!");
-      navigate({ to: "/" });
+
+      // Determine user name and role based on input email
+      let nome = "Vitor Santos";
+      let perfil = "Administrador";
+
+      const normalizedEmail = email.toLowerCase().trim();
+      if (normalizedEmail.includes("camila.ribeiro")) {
+        nome = "Camila Ribeiro";
+        perfil = "Técnico";
+      } else if (normalizedEmail.includes("vitor.santos")) {
+        nome = "Vitor Santos";
+        perfil = "Administrador";
+      } else {
+        // Fallback name extraction from email
+        const userPart = normalizedEmail.split("@")[0];
+        const parts = userPart.split(".");
+        nome = parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(" ");
+        perfil = "Administrador";
+      }
+
+      localStorage.setItem(
+        "bitestoque_user",
+        JSON.stringify({
+          nome,
+          perfil,
+          email: normalizedEmail,
+        }),
+      );
+
+      toast.success(`Bem-vindo de volta, ${nome}!`);
+
+      const redirect = sessionStorage.getItem("auth_redirect");
+      if (redirect) {
+        sessionStorage.removeItem("auth_redirect");
+        navigate({ to: redirect });
+      } else {
+        navigate({ to: "/" });
+      }
     }, 1000);
   };
 

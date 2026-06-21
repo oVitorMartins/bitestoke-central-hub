@@ -176,7 +176,7 @@ function NovoAtivoPage() {
       valor: valorCents / 100,
       foto: foto ? "[imagem em base64]" : null,
     };
-    // eslint-disable-next-line no-console
+
     console.log("Novo ativo (mock):", payload);
     toast.success("Ativo cadastrado com sucesso!", {
       description: nome,

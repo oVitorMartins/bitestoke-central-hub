@@ -9,7 +9,8 @@ export const Route = createFileRoute("/inventario/editar/$id")({
   loader: ({ params }) => {
     const ativo = getAtivo(params.id);
     if (!ativo) throw notFound();
-    return { ativo };
+    const { icon, ...serializableAtivo } = ativo;
+    return { ativo: serializableAtivo };
   },
   component: EditarAtivoPage,
 });
@@ -192,7 +193,7 @@ function EditarAtivoPage() {
       valor: valorCents / 100,
       dataAquisicao,
     };
-    // eslint-disable-next-line no-console
+
     console.log("Ativo atualizado (mock):", payload);
     toast.success("Ativo atualizado com sucesso!", { description: nome });
     navigate({ to: "/inventario" });

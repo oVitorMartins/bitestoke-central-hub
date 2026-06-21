@@ -1,7 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus, QrCode } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Plus, QrCode, X, Monitor } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { auditoria } from "@/lib/ativos";
+import { auditoria, ativos } from "@/lib/ativos";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Html5Qrcode } from "html5-qrcode";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,6 +39,36 @@ const categorias = [
 ];
 
 function Dashboard() {
+  const navigate = useNavigate();
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+  const handleScanSuccess = useCallback(
+    (decodedText: string) => {
+      setIsScannerOpen(false);
+
+      // Try to parse ATIVO:id|...
+      let activeId = decodedText;
+      if (decodedText.startsWith("ATIVO:")) {
+        const parts = decodedText.split("|");
+        activeId = parts[0].replace("ATIVO:", "");
+      }
+
+      const found = ativos.find(
+        (a) =>
+          a.id.toLowerCase() === activeId.toLowerCase() ||
+          a.patrimonio.toLowerCase() === decodedText.toLowerCase(),
+      );
+
+      if (found) {
+        toast.success("Ativo identificado!");
+        navigate({ to: "/inventario/editar/$id", params: { id: found.id } });
+      } else {
+        toast.error("Ativo não cadastrado no sistema.");
+      }
+    },
+    [navigate],
+  );
+
   return (
     <AppShell>
       {/* Metric cards */}
@@ -85,14 +125,17 @@ function Dashboard() {
             </div>
           </div>
         </Link>
-        <button className="group flex items-center gap-4 rounded-2xl border bg-card p-5 text-left transition-colors hover:bg-muted">
+        <button
+          onClick={() => setIsScannerOpen(true)}
+          className="group flex items-center gap-4 rounded-2xl border bg-card p-5 text-left transition-colors hover:bg-muted cursor-pointer"
+        >
           <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-muted">
             <QrCode className="h-5 w-5" />
           </div>
           <div className="min-w-0">
             <div className="font-semibold">Escanear QR Code</div>
             <div className="text-xs text-muted-foreground">
-              Auditoria rápida através de identificação por câmera.
+              Escanear um dispositivo para visualizar ou editar
             </div>
           </div>
         </button>
@@ -178,6 +221,11 @@ function Dashboard() {
           </div>
         </section>
       </div>
+      <QrScannerDialog
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={handleScanSuccess}
+      />
     </AppShell>
   );
 }
@@ -210,5 +258,117 @@ function MetricCard({
       </div>
       {footer && <div className="flex flex-col justify-end">{footer}</div>}
     </div>
+  );
+}
+
+function QrScannerDialog({
+  isOpen,
+  onClose,
+  onScanSuccess,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onScanSuccess: (text: string) => void;
+}) {
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timer = setTimeout(() => {
+      const html5QrCode = new Html5Qrcode("reader");
+      scannerRef.current = html5QrCode;
+
+      html5QrCode
+        .start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 220, height: 220 },
+          },
+          (decodedText) => {
+            html5QrCode
+              .stop()
+              .then(() => {
+                onScanSuccess(decodedText);
+              })
+              .catch((err) => {
+                console.error("Failed to stop scanner:", err);
+                onScanSuccess(decodedText);
+              });
+          },
+          () => {},
+        )
+        .catch((err) => {
+          console.error("Failed to start scanner:", err);
+          setError(
+            "Não foi possível acessar a câmera. Certifique-se de dar as permissões necessárias.",
+          );
+        });
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        scannerRef.current
+          .stop()
+          .catch((err) => console.error("Failed to stop scanner on unmount:", err));
+      }
+    };
+  }, [isOpen, onScanSuccess]);
+
+  const handleClose = async () => {
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      try {
+        await scannerRef.current.stop();
+      } catch (err) {
+        console.error("Failed to stop scanner on close:", err);
+      }
+    }
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="w-screen h-screen max-w-none md:max-w-[400px] md:h-auto left-0 top-0 translate-x-0 translate-y-0 md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] rounded-none md:rounded-2xl p-6 flex flex-col justify-between md:justify-start">
+        <DialogHeader className="shrink-0">
+          <DialogTitle>Escanear QR Code</DialogTitle>
+          <DialogDescription>
+            Posicione o QR Code do patrimônio dentro da área demarcada.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-1 flex-col items-center justify-center py-4 space-y-6">
+          <div className="relative w-full max-w-[280px] aspect-square overflow-hidden rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-black flex items-center justify-center shadow-inner">
+            <div id="reader" className="w-full h-full" />
+
+            {!error && (
+              <div className="absolute inset-0 pointer-events-none border-[30px] border-black/40 flex items-center justify-center">
+                <div className="w-[180px] h-[180px] border-2 border-primary rounded-lg relative overflow-hidden">
+                  <div className="absolute inset-x-0 h-0.5 bg-primary/80 shadow-[0_0_8px_#3b82f6] animate-bounce top-1/2" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <p className="text-xs text-destructive text-center leading-relaxed max-w-[280px] bg-destructive/10 p-3 rounded-lg border border-destructive/20">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="shrink-0 w-full flex justify-center pb-4 md:pb-0">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="w-full max-w-[280px] rounded-lg border bg-background hover:bg-muted text-foreground font-semibold py-3 text-sm transition-colors shadow-sm cursor-pointer"
+          >
+            Fechar Câmera / Cancelar
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
