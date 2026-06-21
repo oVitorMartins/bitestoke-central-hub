@@ -7,8 +7,6 @@ import {
   LifeBuoy,
   LogOut,
   Search,
-  Bell,
-  Grid3x3,
   Plus,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -89,19 +87,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               />
             </div>
             <div className="ml-auto flex items-center gap-3">
-              <button className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted">
-                <Bell className="h-4 w-4" />
-              </button>
-              <button className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted">
-                <Grid3x3 className="h-4 w-4" />
-              </button>
-              <div className="flex items-center gap-3 pl-2">
-                <div className="text-right">
-                  <div className="text-sm font-semibold leading-tight">Admin Usuário</div>
-                  <div className="text-[11px] text-muted-foreground leading-tight">Gestor Global</div>
-                </div>
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet to-info" />
+              <div className="text-right">
+                <div className="text-sm font-semibold leading-tight">Admin Usuário</div>
+                <div className="text-[11px] text-muted-foreground leading-tight">Gestor Global</div>
               </div>
+              <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet to-info" />
             </div>
           </div>
 
