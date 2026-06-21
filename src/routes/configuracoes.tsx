@@ -7,7 +7,7 @@ import { AppShell } from "@/components/AppShell";
 export const Route = createFileRoute("/configuracoes")({
   head: () => ({
     meta: [
-      { title: "Configurações — AssetTrack IT" },
+      { title: "Configurações — BitEstoque" },
       { name: "description", content: "Gerencie usuários, setores, categorias e fornecedores do sistema." },
     ],
   }),

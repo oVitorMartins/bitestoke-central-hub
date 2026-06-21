@@ -34,9 +34,9 @@ import {
 export const Route = createFileRoute("/inventario/")({
   head: () => ({
     meta: [
-      { title: "Inventário — AssetTrack IT" },
+      { title: "Inventário — BitEstoque" },
       { name: "description", content: "Gestão e listagem de todos os ativos de TI da corporação." },
-      { property: "og:title", content: "Inventário — AssetTrack IT" },
+      { property: "og:title", content: "Inventário — BitEstoque" },
       { property: "og:description", content: "Gestão e listagem de todos os ativos de TI da corporação." },
     ],
   }),

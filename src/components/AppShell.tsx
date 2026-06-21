@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Package className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <h1 className="truncate font-bold text-foreground">AssetTrack IT</h1>
+                <h1 className="truncate font-bold text-foreground">BitEstoque</h1>
                 <p className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
                   Hospital Unidade Suzano
                 </p>
