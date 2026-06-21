@@ -6,7 +6,6 @@ import {
   Settings,
   LifeBuoy,
   LogOut,
-  Search,
   Plus,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -34,7 +33,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="min-w-0">
                 <h1 className="truncate font-bold text-foreground">BitEstoque</h1>
                 <p className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Hospital Maternidade de Suzano
+                  HMS
                 </p>
               </div>
             </div>
@@ -47,8 +46,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                     key={item.label}
                     to={item.to}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${active
-                        ? "bg-sidebar-active text-info"
-                        : "text-sidebar-foreground hover:bg-muted"
+                      ? "bg-sidebar-active text-info"
+                      : "text-sidebar-foreground hover:bg-muted"
                       }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -76,16 +75,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Main */}
         <main className="min-w-0 flex-1 p-6">
           {/* Topbar */}
-          <div className="mb-6 flex items-center gap-4">
-            <div className="relative max-w-md flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Buscar por nome, patrimônio ou série..."
-                className="w-full rounded-full border bg-muted/50 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-info"
-              />
-            </div>
-            <div className="ml-auto flex items-center gap-3">
+          <div className="mb-6 flex items-center justify-end gap-4">
+            <div className="flex items-center gap-3">
               <div className="text-right">
                 <div className="text-sm font-semibold leading-tight">Admin Usuário</div>
                 <div className="text-[11px] text-muted-foreground leading-tight">Gestor Global</div>
