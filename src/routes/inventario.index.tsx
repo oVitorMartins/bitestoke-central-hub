@@ -47,11 +47,11 @@ function statusClass(s: Status) {
   switch (s) {
     case "Em Uso":
       return "bg-success-bg text-success ring-1 ring-success/30";
-    case "Manutenção":
+    case "Em Manutenção":
       return "bg-warning-bg text-warning ring-1 ring-warning/30";
     case "Estoque":
       return "bg-info-bg text-info ring-1 ring-info/30";
-    case "Aguardando Descarte":
+    case "Descarte":
       return "bg-danger-bg text-danger ring-1 ring-danger/30";
   }
 }
@@ -343,7 +343,10 @@ function InventarioPage() {
             </p>
             <div className="mt-5 grid place-items-center rounded-xl border bg-white p-5">
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrAtivo.patrimonio)}`}
+                key={qrAtivo.id}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                  `ATIVO:${qrAtivo.id}|PAT:${qrAtivo.patrimonio}|SN:${qrAtivo.serie}`
+                )}`}
                 alt={`QR Code ${qrAtivo.patrimonio}`}
                 width={150}
                 height={150}
