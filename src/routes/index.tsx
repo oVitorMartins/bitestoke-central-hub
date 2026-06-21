@@ -83,7 +83,7 @@ function Dashboard() {
         <MetricCard label="Total de Ativos" value="1.240" footer={<span className="flex items-center gap-1 text-xs text-muted-foreground"><TrendingUp className="h-3 w-3" /> +12 este mês</span>} />
         <MetricCard label="Em Uso" value="980" footer={<div className="h-1.5 w-full rounded-full bg-muted"><div className="h-full w-[79%] rounded-full bg-primary" /></div>} />
         <MetricCard label="Em Manutenção" value="45" valueTone="warning" footer={<span className="text-[10px] font-bold tracking-wider text-warning">ALERTA</span>} />
-        <MetricCard label="Aguardando Manutenção" value="12" valueTone="danger" footer={<span className="rounded-md bg-danger-bg px-2 py-0.5 text-[10px] font-bold tracking-wider text-danger">CRÍTICO</span>} />
+        <MetricCard label="Ativos Disponíveis" value="215" footer={<span className="rounded-md bg-success-bg px-2 py-0.5 text-[10px] font-bold tracking-wider text-success">DISPONÍVEL</span>} />
       </div>
 
       {/* Action cards */}
