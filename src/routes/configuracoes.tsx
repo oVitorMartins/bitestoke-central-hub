@@ -1,14 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { Plus, Trash2, Users, Building2, Tag, Truck } from "lucide-react";
+import { Plus, Trash2, Pencil, Users, Building2, Tag, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/configuracoes")({
   head: () => ({
     meta: [
       { title: "Configurações — BitEstoque" },
-      { name: "description", content: "Gerencie usuários, setores, categorias e fornecedores do sistema." },
+      {
+        name: "description",
+        content: "Gerencie usuários, setores, categorias e fornecedores do sistema.",
+      },
     ],
   }),
   component: ConfiguracoesPage,
@@ -23,7 +34,7 @@ const tabs: { id: TabId; label: string; icon: typeof Users }[] = [
   { id: "fornecedores", label: "Fornecedores de Locação", icon: Truck },
 ];
 
-type Usuario = { id: string; nome: string; email: string; perfil: "Admin" | "Técnico" };
+type Usuario = { id: string; nome: string; email: string; perfil: "Admin" | "Gestor" | "Técnico" };
 
 function ConfiguracoesPage() {
   const [tab, setTab] = useState<TabId>("usuarios");
@@ -83,7 +94,12 @@ function ConfiguracoesPage() {
               title="Fornecedores de Locação"
               description="Empresas parceiras de locação de equipamentos."
               placeholder="Adicionar nova empresa locadora"
-              initial={["Locaweb Corp", "Arklok Outsourcing", "Simpress", "Fornecedor Hospitalar SP"]}
+              initial={[
+                "Locaweb Corp",
+                "Arklok Outsourcing",
+                "Simpress",
+                "Fornecedor Hospitalar SP",
+              ]}
               buttonLabel="Cadastrar Empresa"
             />
           )}
@@ -98,14 +114,61 @@ function UsuariosTab() {
     { id: "u1", nome: "Vitor Santos", email: "vitor.santos@hospital.com", perfil: "Admin" },
     { id: "u2", nome: "Camila Ribeiro", email: "camila.ribeiro@hospital.com", perfil: "Técnico" },
   ]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [perfil, setPerfil] = useState<"Admin" | "Gestor" | "Técnico">("Técnico");
+  const [senha, setSenha] = useState("");
 
   function handleNovo() {
-    toast.info("Abrir cadastro de novo usuário (mock).");
+    setEditingUsuario(null);
+    setNome("");
+    setEmail("");
+    setPerfil("Técnico");
+    setSenha("");
+    setIsModalOpen(true);
+  }
+
+  function handleEditar(u: Usuario) {
+    setEditingUsuario(u);
+    setNome(u.nome);
+    setEmail(u.email);
+    setPerfil(u.perfil);
+    setSenha("");
+    setIsModalOpen(true);
   }
 
   function handleRemover(id: string) {
     setUsuarios((prev) => prev.filter((u) => u.id !== id));
     toast.success("Usuário removido.");
+  }
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!nome.trim() || !email.trim()) return;
+
+    if (editingUsuario) {
+      setUsuarios((prev) =>
+        prev.map((u) =>
+          u.id === editingUsuario.id ? { ...u, nome: nome.trim(), email: email.trim(), perfil } : u,
+        ),
+      );
+      if (senha) {
+        toast.success(`Senha de ${nome} alterada.`);
+      }
+      toast.success("Usuário atualizado com sucesso.");
+    } else {
+      const novoUsuario: Usuario = {
+        id: "u_" + Date.now(),
+        nome: nome.trim(),
+        email: email.trim(),
+        perfil,
+      };
+      setUsuarios((prev) => [...prev, novoUsuario]);
+      toast.success("Usuário cadastrado com sucesso.");
+    }
+    setIsModalOpen(false);
   }
 
   return (
@@ -119,7 +182,7 @@ function UsuariosTab() {
         </div>
         <button
           onClick={handleNovo}
-          className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:opacity-90"
+          className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:opacity-90 cursor-pointer"
         >
           <Plus className="h-4 w-4" /> Novo Usuário
         </button>
@@ -145,20 +208,31 @@ function UsuariosTab() {
                     className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                       u.perfil === "Admin"
                         ? "bg-violet-bg text-violet ring-1 ring-violet/30"
-                        : "bg-info-bg text-info ring-1 ring-info/30"
+                        : u.perfil === "Gestor"
+                          ? "bg-warning-bg text-warning ring-1 ring-warning/30"
+                          : "bg-info-bg text-info ring-1 ring-info/30"
                     }`}
                   >
                     {u.perfil}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => handleRemover(u.id)}
-                    className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-danger"
-                    aria-label="Remover"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <div className="flex justify-end gap-1">
+                    <button
+                      onClick={() => handleEditar(u)}
+                      className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                      aria-label="Editar"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleRemover(u.id)}
+                      className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-danger cursor-pointer"
+                      aria-label="Remover"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -172,6 +246,92 @@ function UsuariosTab() {
           </tbody>
         </table>
       </div>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingUsuario ? "Editar Usuário" : "Cadastrar Novo Usuário"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingUsuario
+                ? "Altere os dados do usuário. Deixe a senha em branco se não desejar alterar."
+                : "Preencha as informações abaixo para criar um novo usuário."}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Nome Completo</label>
+              <input
+                type="text"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="Ex: João Silva"
+                className="w-full rounded-lg border bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/70 focus:border-info focus:outline-none"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">E-mail</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Ex: joao@hospital.com"
+                className="w-full rounded-lg border bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/70 focus:border-info focus:outline-none"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">
+                Perfis de Acesso
+              </label>
+              <select
+                value={perfil}
+                onChange={(e) => setPerfil(e.target.value as "Admin" | "Gestor" | "Técnico")}
+                className="w-full rounded-lg border bg-background px-3.5 py-2.5 text-sm focus:border-info focus:outline-none"
+              >
+                <option value="Admin">Admin</option>
+                <option value="Gestor">Gestor</option>
+                <option value="Técnico">Técnico</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">
+                {editingUsuario ? "Nova Senha (opcional)" : "Senha Inicial"}
+              </label>
+              <input
+                type="password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                placeholder={editingUsuario ? "Deixe em branco para manter" : "Mínimo 6 caracteres"}
+                className="w-full rounded-lg border bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/70 focus:border-info focus:outline-none"
+                required={!editingUsuario}
+                minLength={6}
+              />
+            </div>
+
+            <DialogFooter className="pt-4 gap-2 sm:gap-0">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-lg border px-4 py-2.5 text-sm font-semibold hover:bg-muted cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:opacity-90 cursor-pointer"
+              >
+                Salvar
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

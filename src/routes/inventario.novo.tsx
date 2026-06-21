@@ -1,15 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import {
-  Info,
-  ShoppingCart,
-  AlignLeft,
-  Tag,
-  Camera,
-  QrCode,
-  ChevronDown,
-  X,
-} from "lucide-react";
+import { Info, ShoppingCart, AlignLeft, Tag, Camera, QrCode, ChevronDown, X } from "lucide-react";
 import { useState, useRef, type FormEvent, type ChangeEvent } from "react";
 import { toast } from "sonner";
 
@@ -222,10 +213,18 @@ function NovoAtivoPage() {
                 </Field>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Marca / Modelo">
-                    <input name="marcaModelo" className={`${inputCls} font-mono`} placeholder="Ex: Apple / A2780" />
+                    <input
+                      name="marcaModelo"
+                      className={`${inputCls} font-mono`}
+                      placeholder="Ex: Apple / A2780"
+                    />
                   </Field>
                   <Field label="Número de Série (S/N)">
-                    <input name="serie" className={`${inputCls} font-mono`} placeholder="EX: C02XG1..." />
+                    <input
+                      name="serie"
+                      className={`${inputCls} font-mono`}
+                      placeholder="EX: C02XG1..."
+                    />
                   </Field>
                 </div>
                 <Field label="Código de Patrimônio" required error={errors.patrimonio}>
@@ -252,11 +251,7 @@ function NovoAtivoPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Data de Aquisição">
-                    <input
-                      type="date"
-                      name="dataAquisicao"
-                      className={inputCls}
-                    />
+                    <input type="date" name="dataAquisicao" className={inputCls} />
                   </Field>
                   <Field label="Valor do Ativo">
                     <input
@@ -273,9 +268,7 @@ function NovoAtivoPage() {
                     name="notaFiscal"
                     className={inputCls}
                     placeholder={
-                      alugado
-                        ? "Ex: Número do Contrato de Locação"
-                        : "Ex: NF-123456 / CTR-2024-01"
+                      alugado ? "Ex: Número do Contrato de Locação" : "Ex: NF-123456 / CTR-2024-01"
                     }
                   />
                 </Field>
@@ -324,7 +317,11 @@ function NovoAtivoPage() {
             >
               {foto ? (
                 <>
-                  <img src={foto} alt="Preview do ativo" className="absolute inset-0 h-full w-full object-cover" />
+                  <img
+                    src={foto}
+                    alt="Preview do ativo"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
                   <span
                     role="button"
                     tabIndex={0}
@@ -357,14 +354,7 @@ function NovoAtivoPage() {
                     value={categoria}
                     onChange={setCategoria}
                     hasError={!!errors.categoria}
-                    options={[
-                      "Notebook",
-                      "Monitor",
-                      "Rede",
-                      "Periféricos",
-                      "Mobiliário",
-                      "Outros",
-                    ]}
+                    options={["Notebook", "Monitor", "Rede", "Periféricos", "Mobiliário", "Outros"]}
                   />
                 </Field>
                 <Field label="Localização" required error={errors.localizacao}>

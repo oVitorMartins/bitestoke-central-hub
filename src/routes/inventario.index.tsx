@@ -37,7 +37,10 @@ export const Route = createFileRoute("/inventario/")({
       { title: "Inventário — BitEstoque" },
       { name: "description", content: "Gestão e listagem de todos os ativos de TI da corporação." },
       { property: "og:title", content: "Inventário — BitEstoque" },
-      { property: "og:description", content: "Gestão e listagem de todos os ativos de TI da corporação." },
+      {
+        property: "og:description",
+        content: "Gestão e listagem de todos os ativos de TI da corporação.",
+      },
     ],
   }),
   component: InventarioPage,
@@ -124,7 +127,8 @@ function InventarioPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Gestão de Inventário</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Visualize e gerencie todos os ativos de <span className="text-info">TI</span> da corporação.
+            Visualize e gerencie todos os ativos de <span className="text-info">TI</span> da
+            corporação.
           </p>
         </div>
         <button
@@ -154,10 +158,28 @@ function InventarioPage() {
         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
           <SlidersHorizontal className="h-4 w-4" /> Filtros:
         </div>
-        <SelectChip value={fCategoria} onChange={setFCategoria} options={categorias} allLabel="Todas Categorias" />
-        <SelectChip value={fStatus} onChange={setFStatus} options={statusList} allLabel="Todos Status" />
-        <SelectChip value={fSetor} onChange={setFSetor} options={setores} allLabel="Todos Setores" />
-        <button onClick={limparFiltros} className="ml-auto text-xs font-semibold text-info hover:underline">
+        <SelectChip
+          value={fCategoria}
+          onChange={setFCategoria}
+          options={categorias}
+          allLabel="Todas Categorias"
+        />
+        <SelectChip
+          value={fStatus}
+          onChange={setFStatus}
+          options={statusList}
+          allLabel="Todos Status"
+        />
+        <SelectChip
+          value={fSetor}
+          onChange={setFSetor}
+          options={setores}
+          allLabel="Todos Setores"
+        />
+        <button
+          onClick={limparFiltros}
+          className="ml-auto text-xs font-semibold text-info hover:underline"
+        >
           Limpar filtros
         </button>
       </div>
@@ -192,9 +214,13 @@ function InventarioPage() {
                     </div>
                   </td>
                   <td className="px-3 py-4 text-muted-foreground">{a.categoria}</td>
-                  <td className="px-3 py-4 font-mono text-xs text-muted-foreground">{a.patrimonio}</td>
+                  <td className="px-3 py-4 font-mono text-xs text-muted-foreground">
+                    {a.patrimonio}
+                  </td>
                   <td className="px-3 py-4">
-                    <span className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(a.status)}`}>
+                    <span
+                      className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(a.status)}`}
+                    >
                       {a.status}
                     </span>
                   </td>
@@ -210,7 +236,9 @@ function InventarioPage() {
                       </button>
                       <button
                         title="Editar"
-                        onClick={() => navigate({ to: "/inventario/editar/$id", params: { id: a.id } })}
+                        onClick={() =>
+                          navigate({ to: "/inventario/editar/$id", params: { id: a.id } })
+                        }
                         className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
                         <Pencil className="h-4 w-4" />
@@ -274,7 +302,9 @@ function InventarioPage() {
                   <div className="font-semibold">{viewAtivo.nome}</div>
                   <div className="text-xs text-muted-foreground">{viewAtivo.specs}</div>
                 </div>
-                <span className={`ml-auto rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(viewAtivo.status)}`}>
+                <span
+                  className={`ml-auto rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(viewAtivo.status)}`}
+                >
                   {viewAtivo.status}
                 </span>
               </div>
@@ -345,7 +375,7 @@ function InventarioPage() {
               <img
                 key={qrAtivo.id}
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                  `ATIVO:${qrAtivo.id}|PAT:${qrAtivo.patrimonio}|SN:${qrAtivo.serie}`
+                  `ATIVO:${qrAtivo.id}|PAT:${qrAtivo.patrimonio}|SN:${qrAtivo.serie}`,
                 )}`}
                 alt={`QR Code ${qrAtivo.patrimonio}`}
                 width={150}
@@ -381,7 +411,9 @@ function InventarioPage() {
 function Detail({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</dt>
+      <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
       <dd className={`mt-1 text-sm text-foreground ${mono ? "font-mono" : ""}`}>{value}</dd>
     </div>
   );

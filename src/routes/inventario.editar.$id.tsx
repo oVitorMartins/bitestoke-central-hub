@@ -1,15 +1,6 @@
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import {
-  Info,
-  ShoppingCart,
-  AlignLeft,
-  Tag,
-  Camera,
-  QrCode,
-  ChevronDown,
-  X,
-} from "lucide-react";
+import { Info, ShoppingCart, AlignLeft, Tag, Camera, QrCode, ChevronDown, X } from "lucide-react";
 import { useState, useRef, type FormEvent, type ChangeEvent } from "react";
 import { toast } from "sonner";
 import { getAtivo } from "@/lib/ativos";
@@ -212,7 +203,9 @@ function EditarAtivoPage() {
       <form onSubmit={handleSubmit} noValidate>
         <div className="mb-6">
           <nav className="mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            <Link to="/inventario" className="hover:text-foreground">Inventário</Link>
+            <Link to="/inventario" className="hover:text-foreground">
+              Inventário
+            </Link>
             <span>›</span>
             <span className="text-foreground">Editar Ativo</span>
           </nav>
@@ -235,10 +228,18 @@ function EditarAtivoPage() {
                 </Field>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Marca / Modelo">
-                    <input name="marcaModelo" defaultValue={ativo.marcaModelo} className={`${inputCls} font-mono`} />
+                    <input
+                      name="marcaModelo"
+                      defaultValue={ativo.marcaModelo}
+                      className={`${inputCls} font-mono`}
+                    />
                   </Field>
                   <Field label="Número de Série (S/N)">
-                    <input name="serie" defaultValue={ativo.serie} className={`${inputCls} font-mono`} />
+                    <input
+                      name="serie"
+                      defaultValue={ativo.serie}
+                      className={`${inputCls} font-mono`}
+                    />
                   </Field>
                 </div>
                 <Field label="Código de Patrimônio" required error={errors.patrimonio}>
@@ -287,9 +288,7 @@ function EditarAtivoPage() {
                     defaultValue={ativo.notaFiscal}
                     className={inputCls}
                     placeholder={
-                      alugado
-                        ? "Ex: Número do Contrato de Locação"
-                        : "Ex: NF-123456 / CTR-2024-01"
+                      alugado ? "Ex: Número do Contrato de Locação" : "Ex: NF-123456 / CTR-2024-01"
                     }
                   />
                 </Field>
@@ -337,7 +336,11 @@ function EditarAtivoPage() {
             >
               {foto ? (
                 <>
-                  <img src={foto} alt="Preview do ativo" className="absolute inset-0 h-full w-full object-cover" />
+                  <img
+                    src={foto}
+                    alt="Preview do ativo"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
                   <span
                     role="button"
                     tabIndex={0}
@@ -355,7 +358,9 @@ function EditarAtivoPage() {
               ) : (
                 <>
                   <Camera className="h-7 w-7" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider">Adicionar Foto</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wider">
+                    Adicionar Foto
+                  </span>
                   <span className="text-[10px] text-muted-foreground/70">JPG ou PNG</span>
                 </>
               )}
@@ -376,7 +381,13 @@ function EditarAtivoPage() {
                     value={localizacao}
                     onChange={setLocalizacao}
                     hasError={!!errors.localizacao}
-                    options={["TI", "RH", "TI - Almoxarifado", "Operações", "Sede Principal - Bloco A"]}
+                    options={[
+                      "TI",
+                      "RH",
+                      "TI - Almoxarifado",
+                      "Operações",
+                      "Sede Principal - Bloco A",
+                    ]}
                   />
                 </Field>
                 <Field label="Status Atual" required error={errors.status}>

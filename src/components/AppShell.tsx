@@ -1,13 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  LayoutDashboard,
-  Package,
-  FileBarChart,
-  Settings,
-  LifeBuoy,
-  LogOut,
-  Plus,
-} from "lucide-react";
+import { LayoutDashboard, Package, FileBarChart, Settings, LogOut, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 
 const navItems = [
@@ -21,10 +13,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="mx-auto flex max-w-[1400px] gap-0 overflow-hidden rounded-3xl border-2 border-violet/30 bg-background shadow-sm">
+    <div className="min-h-screen bg-background p-4 flex flex-col justify-center">
+      <div className="mx-auto flex w-full max-w-[1400px] min-h-[calc(100vh-2rem)] gap-0 overflow-hidden rounded-3xl border-2 border-violet/30 bg-background shadow-sm">
         {/* Sidebar */}
-        <aside className="flex w-64 shrink-0 flex-col justify-between border-r bg-sidebar p-5">
+        <aside className="flex w-64 min-w-[16rem] shrink-0 flex-col justify-between border-r bg-sidebar p-5">
           <div>
             <div className="mb-8 flex items-center gap-3">
               <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary text-primary-foreground">
@@ -45,10 +37,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Link
                     key={item.label}
                     to={item.to}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${active
-                      ? "bg-sidebar-active text-info"
-                      : "text-sidebar-foreground hover:bg-muted"
-                      }`}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      active
+                        ? "bg-sidebar-active text-info"
+                        : "text-sidebar-foreground hover:bg-muted"
+                    }`}
                   >
                     <Icon className="h-4 w-4" />
                     {item.label}
@@ -58,14 +51,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             </nav>
           </div>
           <div className="space-y-3">
-            <Link to="/inventario/novo" className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90">
+            <Link
+              to="/inventario/novo"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+            >
               <Plus className="h-4 w-4" /> Novo Ativo
             </Link>
             <div className="space-y-1 pt-2">
-              <a href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-muted">
-                <LifeBuoy className="h-4 w-4" /> Suporte
-              </a>
-              <a href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-muted">
+              <a
+                href="#"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-muted"
+              >
                 <LogOut className="h-4 w-4" /> Sair
               </a>
             </div>

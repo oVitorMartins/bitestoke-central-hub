@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus, QrCode, TrendingUp } from "lucide-react";
+import { Plus, QrCode } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { auditoria } from "@/lib/ativos";
 
@@ -7,65 +7,66 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "BitEstoque — Painel" },
-      { name: "description", content: "Painel principal do sistema de inventário de TI BitEstoque." },
+      {
+        name: "description",
+        content: "Painel principal do sistema de inventário de TI BitEstoque.",
+      },
       { property: "og:title", content: "BitEstoque — Painel" },
-      { property: "og:description", content: "Painel principal do sistema de inventário de TI BitEstoque." },
+      {
+        property: "og:description",
+        content: "Painel principal do sistema de inventário de TI BitEstoque.",
+      },
     ],
   }),
   component: Dashboard,
 });
 
 const categorias = [
-  { nome: "Notebooks", pct: 45, color: "oklch(0.2 0.02 270)" },
-  { nome: "Monitores", pct: 25, color: "oklch(0.45 0.02 270)" },
-  { nome: "Periféricos", pct: 15, color: "oklch(0.7 0.02 270)" },
-  { nome: "Outros", pct: 15, color: "oklch(0.85 0.03 290)" },
+  { nome: "Notebooks", pct: 45, barColor: "bg-zinc-900 dark:bg-zinc-100" },
+  { nome: "Monitores", pct: 25, barColor: "bg-zinc-700 dark:bg-zinc-400" },
+  { nome: "Periféricos", pct: 15, barColor: "bg-zinc-500 dark:bg-zinc-500" },
+  { nome: "Outros", pct: 15, barColor: "bg-zinc-300 dark:bg-zinc-600" },
 ];
-
-function DonutChart() {
-  const radius = 70;
-  const stroke = 22;
-  const c = 2 * Math.PI * radius;
-  let offset = 0;
-  return (
-    <div className="relative grid place-items-center">
-      <svg width="180" height="180" viewBox="0 0 180 180" className="-rotate-90">
-        {categorias.map((cat) => {
-          const len = (cat.pct / 100) * c;
-          const el = (
-            <circle
-              key={cat.nome}
-              cx="90"
-              cy="90"
-              r={radius}
-              fill="none"
-              stroke={cat.color}
-              strokeWidth={stroke}
-              strokeDasharray={`${len} ${c - len}`}
-              strokeDashoffset={-offset}
-            />
-          );
-          offset += len;
-          return el;
-        })}
-      </svg>
-      <div className="absolute text-center">
-        <div className="text-xs text-muted-foreground">Total</div>
-        <div className="text-2xl font-bold tracking-tight">1.2k+</div>
-      </div>
-    </div>
-  );
-}
 
 function Dashboard() {
   return (
     <AppShell>
       {/* Metric cards */}
       <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard label="Total de Ativos" value="1.240" footer={<span className="flex items-center gap-1 text-xs text-muted-foreground"><TrendingUp className="h-3 w-3" /> +12 este mês</span>} />
-        <MetricCard label="Em Uso" value="980" footer={<div className="h-1.5 w-full rounded-full bg-muted"><div className="h-full w-[79%] rounded-full bg-primary" /></div>} />
-        <MetricCard label="Em Manutenção" value="45" valueTone="warning" footer={<span className="text-[10px] font-bold tracking-wider text-warning">ALERTA</span>} />
-        <MetricCard label="Ativos Disponíveis" value="215" footer={<span className="rounded-md bg-success-bg px-2 py-0.5 text-[10px] font-bold tracking-wider text-success">DISPONÍVEL</span>} />
+        <MetricCard label="Total de Ativos" value="1.240" />
+        <MetricCard
+          label="Em Uso"
+          value="980"
+          footer={
+            <div className="space-y-1.5">
+              <div className="h-1.5 w-full rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <div className="h-full w-[79%] rounded-full bg-slate-600 dark:bg-slate-400" />
+              </div>
+              <div className="text-xs text-muted-foreground">79% da capacidade</div>
+            </div>
+          }
+        />
+        <MetricCard
+          label="Em Manutenção"
+          value="45"
+          valueColor="text-amber-600 dark:text-amber-500"
+          badge={
+            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-amber-600 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50">
+              ALERTA
+            </span>
+          }
+          footer={<div className="text-xs text-muted-foreground">Verificando integridade</div>}
+        />
+        <MetricCard
+          label="Em Estoque"
+          value="215"
+          badge={
+            <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-blue-600 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50">
+              ESTOQUE
+            </span>
+          }
+          footer={<div className="text-xs text-muted-foreground">Pronto para distribuição</div>}
+        />
       </div>
 
       {/* Action cards */}
@@ -79,7 +80,9 @@ function Dashboard() {
           </div>
           <div className="min-w-0">
             <div className="font-semibold">Cadastrar Novo Ativo</div>
-            <div className="text-xs text-primary-foreground/60">Adicionar manualmente hardware ou software ao sistema.</div>
+            <div className="text-xs text-primary-foreground/60">
+              Adicionar manualmente hardware ou software ao sistema.
+            </div>
           </div>
         </Link>
         <button className="group flex items-center gap-4 rounded-2xl border bg-card p-5 text-left transition-colors hover:bg-muted">
@@ -88,7 +91,9 @@ function Dashboard() {
           </div>
           <div className="min-w-0">
             <div className="font-semibold">Escanear QR Code</div>
-            <div className="text-xs text-muted-foreground">Auditoria rápida através de identificação por câmera.</div>
+            <div className="text-xs text-muted-foreground">
+              Auditoria rápida através de identificação por câmera.
+            </div>
           </div>
         </button>
       </div>
@@ -98,7 +103,12 @@ function Dashboard() {
         <section className="rounded-2xl border bg-card p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold">Movimentações Recentes</h2>
-            <Link to="/relatorios" className="text-xs font-medium text-muted-foreground hover:text-foreground">Ver tudo</Link>
+            <Link
+              to="/relatorios"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              Ver tudo
+            </Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -113,7 +123,9 @@ function Dashboard() {
               <tbody>
                 {auditoria.slice(0, 5).map((a, i) => (
                   <tr key={i} className="border-t">
-                    <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">{a.data}</td>
+                    <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">
+                      {a.data}
+                    </td>
                     <td className="py-3.5 pr-4 font-medium text-foreground">{a.responsavel}</td>
                     <td className="py-3.5 pr-4 font-mono text-xs">{a.ativo}</td>
                     <td className="py-3.5 text-muted-foreground">{a.movimentacao}</td>
@@ -126,45 +138,55 @@ function Dashboard() {
 
         <section className="rounded-2xl border bg-card p-5">
           <h2 className="mb-4 font-semibold">Distribuição por Categoria</h2>
-          <div className="mb-5 flex justify-center">
-            <DonutChart />
-          </div>
-          <ul className="space-y-2.5 text-sm">
+          <div className="space-y-4">
             {categorias.map((c) => (
-              <li key={c.nome} className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
-                  {c.nome}
-                </span>
-                <span className="font-semibold text-muted-foreground">{c.pct}%</span>
-              </li>
+              <div key={c.nome} className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm font-medium">
+                  <span className="text-foreground">{c.nome}</span>
+                  <span className="text-muted-foreground">{c.pct}%</span>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${c.barColor}`}
+                    style={{ width: `${c.pct}%` }}
+                  />
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
       </div>
     </AppShell>
   );
 }
 
-
 function MetricCard({
   label,
   value,
-  valueTone,
+  valueColor = "text-foreground",
+  badge,
   footer,
 }: {
   label: string;
   value: string;
-  valueTone?: "warning" | "danger";
+  valueColor?: string;
+  badge?: React.ReactNode;
   footer?: React.ReactNode;
 }) {
-  const tone =
-    valueTone === "warning" ? "text-warning" : valueTone === "danger" ? "text-danger" : "text-foreground";
   return (
-    <div className="rounded-2xl border bg-card p-5">
-      <div className="mb-3 text-xs font-medium text-muted-foreground">{label}</div>
-      <div className={`mb-3 text-4xl font-bold tracking-tight ${tone}`}>{value}</div>
-      <div className="min-h-[18px]">{footer}</div>
+    <div
+      className={`rounded-2xl border bg-card p-5 flex flex-col h-[145px] ${
+        footer ? "justify-between" : "justify-center"
+      }`}
+    >
+      <div className={footer ? "" : "space-y-1"}>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-medium text-muted-foreground">{label}</span>
+          {badge}
+        </div>
+        <div className={`text-4xl font-bold tracking-tight ${valueColor}`}>{value}</div>
+      </div>
+      {footer && <div className="flex flex-col justify-end">{footer}</div>}
     </div>
   );
 }

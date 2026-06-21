@@ -33,7 +33,9 @@ function RelatoriosPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold tracking-tight">Relatórios</h1>
-          <p className="text-xs text-muted-foreground">Exporte dados filtrados e acompanhe o histórico de auditoria.</p>
+          <p className="text-xs text-muted-foreground">
+            Exporte dados filtrados e acompanhe o histórico de auditoria.
+          </p>
         </div>
       </div>
 
@@ -47,7 +49,11 @@ function RelatoriosPage() {
             className="rounded-lg border bg-background px-3 py-2.5 text-sm outline-none focus:border-info"
           >
             <option value="">Todos Status</option>
-            {statusList.map((s) => <option key={s} value={s}>{s}</option>)}
+            {statusList.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
           <select
             value={categoria}
@@ -55,7 +61,11 @@ function RelatoriosPage() {
             className="rounded-lg border bg-background px-3 py-2.5 text-sm outline-none focus:border-info"
           >
             <option value="">Todas Categorias</option>
-            {categorias.map((c) => <option key={c} value={c}>{c}</option>)}
+            {categorias.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
           </select>
           <select
             value={setor}
@@ -63,7 +73,11 @@ function RelatoriosPage() {
             className="rounded-lg border bg-background px-3 py-2.5 text-sm outline-none focus:border-info"
           >
             <option value="">Todos Setores</option>
-            {setores.map((s) => <option key={s} value={s}>{s}</option>)}
+            {setores.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
           <button
             onClick={exportar}
