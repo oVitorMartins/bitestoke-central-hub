@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   SlidersHorizontal,
   ChevronDown,
@@ -12,6 +12,10 @@ import {
   Printer,
   X,
   Search,
+  Package,
+  Plus,
+  Trash2,
+  Lock,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import {
@@ -23,10 +27,19 @@ import {
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   ativos as ativosMock,
   categorias,
   statusList,
   setores,
+  auditoria,
   type Ativo,
   type Status,
 } from "@/lib/ativos";
@@ -99,9 +112,106 @@ function InventarioPage() {
   const [fStatus, setFStatus] = useState("");
   const [fSetor, setFSetor] = useState("");
 
+  const [ativosList, setAtivosList] = useState<Ativo[]>(ativosMock);
+  const [currentUser, setCurrentUser] = useState<{ nome: string; perfil: string } | null>(null);
+
+  // Disposal states
+  const [isDisposalOpen, setIsDisposalOpen] = useState(false);
+  const [disposalAtivo, setDisposalAtivo] = useState<Ativo | null>(null);
+  const [disposalReason, setDisposalReason] = useState("");
+
+  const [isBatchPrintOpen, setIsBatchPrintOpen] = useState(false);
+  const [printCategoria, setPrintCategoria] = useState("");
+  const [printSetor, setPrintSetor] = useState("");
+  const [ativosParaImprimir, setAtivosParaImprimir] = useState<Ativo[]>([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("bitestoque_user");
+    if (stored) {
+      try {
+        setCurrentUser(JSON.parse(stored));
+      } catch (err) {
+        console.error("Failed to parse user session", err);
+      }
+    }
+  }, []);
+
+  const canDispose =
+    currentUser?.perfil === "Administrador" ||
+    currentUser?.perfil === "Admin" ||
+    currentUser?.perfil === "Gestor";
+
+  const handleDisposalClick = (a: Ativo) => {
+    setDisposalAtivo(a);
+    setDisposalReason("");
+    setIsDisposalOpen(true);
+  };
+
+  const handleConfirmDisposal = () => {
+    if (!disposalReason.trim()) {
+      toast.error("Por favor, insira o motivo do descarte.");
+      return;
+    }
+
+    if (!disposalAtivo) return;
+
+    setAtivosList((prev) =>
+      prev.map((a) => (a.id === disposalAtivo.id ? { ...a, status: "Descarte" } : a)),
+    );
+
+    const newLog = {
+      data: new Date().toLocaleString("pt-BR").slice(0, 16),
+      responsavel: currentUser?.nome || "Admin Usuário",
+      ativo: disposalAtivo.patrimonio,
+      movimentacao: `Descartou ativo. Motivo: ${disposalReason.trim()}`,
+    };
+
+    auditoria.unshift(newLog);
+
+    toast.success(`Ativo ${disposalAtivo.patrimonio} descartado com sucesso!`);
+    setIsDisposalOpen(false);
+    setDisposalReason("");
+    setDisposalAtivo(null);
+  };
+
+  useEffect(() => {
+    if (ativosParaImprimir.length > 0) {
+      const timer = setTimeout(() => {
+        window.print();
+        setAtivosParaImprimir([]);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [ativosParaImprimir]);
+
+  const handlePrintBatch = () => {
+    const list = ativosList.filter((a) => {
+      if (printCategoria && a.categoria !== printCategoria) return false;
+      if (printSetor && a.localizacao !== printSetor) return false;
+      return true;
+    });
+
+    if (list.length === 0) {
+      toast.error("Nenhum ativo encontrado com os filtros selecionados.");
+      return;
+    }
+
+    setAtivosParaImprimir(list);
+    setIsBatchPrintOpen(false);
+    toast.success(`Gerando folha de impressão para ${list.length} ativos...`);
+  };
+
+  const matchingPrintCount = useMemo(() => {
+    return ativosList.filter((a) => {
+      if (printCategoria && a.categoria !== printCategoria) return false;
+      if (printSetor && a.localizacao !== printSetor) return false;
+      return true;
+    }).length;
+  }, [ativosList, printCategoria, printSetor]);
+
   const filtered = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return ativosMock.filter((a) => {
+    return ativosList.filter((a) => {
       if (fCategoria && a.categoria !== fCategoria) return false;
       if (fStatus && a.status !== fStatus) return false;
       if (fSetor && a.localizacao !== fSetor) return false;
@@ -111,7 +221,53 @@ function InventarioPage() {
       }
       return true;
     });
-  }, [busca, fCategoria, fStatus, fSetor]);
+  }, [ativosList, busca, fCategoria, fStatus, fSetor]);
+
+  const handleExportCsv = () => {
+    const headers = [
+      "Nome do Ativo",
+      "Categoria",
+      "Patrimônio",
+      "Número de Série",
+      "Status",
+      "Localização",
+      "Data de Aquisição",
+      "Valor",
+      "Nota Fiscal",
+      "Criticidade",
+      "Observações",
+    ];
+    const rows = filtered.map((a) => [
+      a.nome,
+      a.categoria,
+      a.patrimonio,
+      a.serie,
+      a.status,
+      a.localizacao,
+      a.dataAquisicao,
+      a.valor,
+      a.notaFiscal,
+      a.criticidade,
+      a.observacoes,
+    ]);
+    const csvContent = [
+      "sep=;",
+      headers.join(";"),
+      ...rows.map((row) =>
+        row.map((val) => `"${(val || "").toString().replace(/"/g, '""')}"`).join(";"),
+      ),
+    ].join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "inventario_bitestoque.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Inventário exportado com sucesso!");
+  };
 
   function limparFiltros() {
     setBusca("");
@@ -131,15 +287,24 @@ function InventarioPage() {
             corporação.
           </p>
         </div>
-        <button
-          onClick={() => {
-            toast.info("Exportando inventário para Excel (CSV)...");
-            setTimeout(() => toast.success("Download concluído com sucesso!"), 1000);
-          }}
-          className="inline-flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted"
-        >
-          <Download className="h-4 w-4" /> Exportar
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => {
+              setPrintCategoria("");
+              setPrintSetor("");
+              setIsBatchPrintOpen(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-semibold hover:bg-muted cursor-pointer"
+          >
+            <Printer className="h-4 w-4" /> Imprimir em Lote
+          </button>
+          <button
+            onClick={handleExportCsv}
+            className="inline-flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted cursor-pointer"
+          >
+            <Download className="h-4 w-4" /> Exportar
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -178,7 +343,7 @@ function InventarioPage() {
         />
         <button
           onClick={limparFiltros}
-          className="ml-auto text-xs font-semibold text-info hover:underline"
+          className="ml-auto text-xs font-semibold text-info hover:underline cursor-pointer"
         >
           Limpar filtros
         </button>
@@ -220,7 +385,9 @@ function InventarioPage() {
                     </td>
                     <td className="px-3 py-4">
                       <span
-                        className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(a.status)}`}
+                        className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(
+                          a.status,
+                        )}`}
                       >
                         {a.status}
                       </span>
@@ -231,7 +398,7 @@ function InventarioPage() {
                         <button
                           title="Visualizar"
                           onClick={() => setViewAtivo(a)}
-                          className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                          className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
@@ -240,17 +407,26 @@ function InventarioPage() {
                           onClick={() =>
                             navigate({ to: "/inventario/editar/$id", params: { id: a.id } })
                           }
-                          className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                          className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           title="Ver QR Code"
                           onClick={() => setQrAtivo(a)}
-                          className="grid h-8 w-8 place-items-center rounded-md bg-foreground text-background transition-opacity hover:opacity-90"
+                          className="grid h-8 w-8 place-items-center rounded-md bg-foreground text-background transition-opacity hover:opacity-90 cursor-pointer"
                         >
                           <QrCode className="h-4 w-4" />
                         </button>
+                        {canDispose && a.status !== "Descarte" && (
+                          <button
+                            title="Descartar Ativo"
+                            onClick={() => handleDisposalClick(a)}
+                            className="grid h-8 w-8 place-items-center rounded-md text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30 cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -326,6 +502,14 @@ function InventarioPage() {
                   >
                     <QrCode className="h-3.5 w-3.5" /> QR Code
                   </button>
+                  {canDispose && a.status !== "Descarte" && (
+                    <button
+                      onClick={() => handleDisposalClick(a)}
+                      className="flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50/50 dark:border-red-900/50 dark:bg-red-950/20 px-3 py-1.5 text-xs text-red-600 hover:text-red-700 cursor-pointer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Descartar
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -340,16 +524,16 @@ function InventarioPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between border-t px-5 py-3">
           <span className="text-xs text-muted-foreground">
-            Mostrando {filtered.length} de {ativosMock.length} ativos
+            Mostrando {filtered.length} de {ativosList.length} ativos
           </span>
           <div className="flex items-center gap-1">
-            <button className="grid h-8 w-8 place-items-center rounded-md border text-muted-foreground hover:bg-muted">
+            <button className="grid h-8 w-8 place-items-center rounded-md border text-muted-foreground hover:bg-muted cursor-pointer">
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button className="grid h-8 w-8 place-items-center rounded-md bg-foreground text-xs font-semibold text-background">
               1
             </button>
-            <button className="grid h-8 w-8 place-items-center rounded-md border text-muted-foreground hover:bg-muted">
+            <button className="grid h-8 w-8 place-items-center rounded-md border text-muted-foreground hover:bg-muted cursor-pointer">
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
@@ -474,6 +658,174 @@ function InventarioPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Imprimir em Lote Dialog */}
+      <Dialog open={isBatchPrintOpen} onOpenChange={setIsBatchPrintOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Imprimir em Lote</DialogTitle>
+            <DialogDescription>
+              Selecione os filtros abaixo para gerar uma folha compacta de etiquetas QR Code.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">
+                Filtrar por Categoria
+              </label>
+              <select
+                value={printCategoria}
+                onChange={(e) => setPrintCategoria(e.target.value)}
+                className="w-full rounded-lg border bg-background px-3.5 py-2.5 text-sm focus:border-info focus:outline-none"
+              >
+                <option value="">Todas as Categorias</option>
+                {categorias.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">
+                Filtrar por Localização / Setor
+              </label>
+              <select
+                value={printSetor}
+                onChange={(e) => setPrintSetor(e.target.value)}
+                className="w-full rounded-lg border bg-background px-3.5 py-2.5 text-sm focus:border-info focus:outline-none"
+              >
+                <option value="">Todos os Setores</option>
+                {setores.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground flex justify-between items-center">
+              <span>Etiquetas a serem geradas:</span>
+              <span className="font-semibold text-foreground text-sm">{matchingPrintCount}</span>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              type="button"
+              onClick={() => setIsBatchPrintOpen(false)}
+              className="rounded-lg border px-4 py-2.5 text-sm font-semibold hover:bg-muted cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handlePrintBatch}
+              disabled={matchingPrintCount === 0}
+              className="rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50 cursor-pointer"
+            >
+              Imprimir Lote
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmar Descarte de Ativo Dialog */}
+      <Dialog open={isDisposalOpen} onOpenChange={setIsDisposalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirmar Descarte de Ativo</DialogTitle>
+            <DialogDescription>
+              Tem certeza de que deseja descartar este ativo? Esta ação alterará o status para
+              Descarte e registrará a justificativa na auditoria.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {disposalAtivo && (
+              <div className="rounded-lg bg-muted p-3 text-xs space-y-1">
+                <div>
+                  <span className="font-semibold">Ativo:</span> {disposalAtivo.nome}
+                </div>
+                <div>
+                  <span className="font-semibold">Patrimônio:</span> {disposalAtivo.patrimonio}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">
+                Motivo do Descarte <span className="text-destructive">*</span>
+              </label>
+              <textarea
+                value={disposalReason}
+                onChange={(e) => setDisposalReason(e.target.value)}
+                placeholder="Ex: Equipamento queimado sem conserto, Obsolescência, etc."
+                rows={3}
+                className="w-full rounded-lg border bg-background px-3.5 py-2.5 text-sm focus:border-info focus:outline-none resize-y"
+                required
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              type="button"
+              onClick={() => setIsDisposalOpen(false)}
+              className="rounded-lg border px-4 py-2.5 text-sm font-semibold hover:bg-muted cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmDisposal}
+              disabled={!disposalReason.trim()}
+              className="rounded-lg bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 text-sm font-semibold disabled:opacity-50 cursor-pointer"
+            >
+              Confirmar Descarte
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invisible Print Layout (shows only under @media print) */}
+      {ativosParaImprimir.length > 0 && (
+        <div id="print-area">
+          {ativosParaImprimir.map((ativo) => (
+            <div
+              key={ativo.id}
+              className="flex flex-col items-center justify-between border border-zinc-300 p-3 rounded-lg text-center h-[180px] bg-white text-black"
+            >
+              {/* Header compact logo */}
+              <div className="flex items-center gap-1 border-b border-zinc-200 pb-1.5 w-full justify-center">
+                <Package className="h-3.5 w-3.5 text-black shrink-0" />
+                <span className="text-[10px] font-bold tracking-tight uppercase">BitEstoque</span>
+              </div>
+              {/* QR Code */}
+              <div className="flex-1 flex items-center justify-center p-1">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
+                    `ATIVO:${ativo.id}|PAT:${ativo.patrimonio}|SN:${ativo.serie}`,
+                  )}`}
+                  alt={`QR Code ${ativo.patrimonio}`}
+                  className="w-20 h-20"
+                />
+              </div>
+              {/* Footer */}
+              <div className="w-full pt-1.5 border-t border-zinc-200">
+                <div className="text-[9px] font-semibold text-zinc-800 truncate max-w-full px-1">
+                  {ativo.nome}
+                </div>
+                <div className="text-[9px] font-mono font-bold text-zinc-600 mt-0.5">
+                  {ativo.patrimonio}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </AppShell>

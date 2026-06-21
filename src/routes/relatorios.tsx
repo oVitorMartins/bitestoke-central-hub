@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Download, FileBarChart } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { categorias, statusList, setores, auditoria } from "@/lib/ativos";
-import { useState } from "react";
+import { categorias, statusList, setores, auditoria, ativos as ativosMock } from "@/lib/ativos";
+import { useState, useMemo } from "react";
 
 export const Route = createFileRoute("/relatorios")({
   head: () => ({
@@ -20,9 +20,42 @@ function RelatoriosPage() {
   const [categoria, setCategoria] = useState("");
   const [setor, setSetor] = useState("");
 
+  const filteredAuditoria = useMemo(() => {
+    return auditoria.filter((a) => {
+      const asset = ativosMock.find(
+        (item) =>
+          item.patrimonio === a.ativo || item.id === a.ativo || a.ativo.includes(item.patrimonio),
+      );
+      if (status && asset && asset.status !== status) return false;
+      if (categoria && asset && asset.categoria !== categoria) return false;
+      if (setor && asset && asset.localizacao !== setor) return false;
+      return true;
+    });
+  }, [status, categoria, setor]);
+
   function exportar() {
-    toast.info("Exportando relatório para Excel (CSV)...");
-    setTimeout(() => toast.success("Download concluído com sucesso!"), 1000);
+    const headers = ["Data/Hora", "Responsável", "Ativo Afetado", "Movimentação"];
+
+    const rows = filteredAuditoria.map((a) => [a.data, a.responsavel, a.ativo, a.movimentacao]);
+
+    const csvContent = [
+      "sep=;",
+      headers.join(";"),
+      ...rows.map((row) =>
+        row.map((val) => `"${(val || "").toString().replace(/"/g, '""')}"`).join(";"),
+      ),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "relatorio_movimentacoes.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Relatório de auditoria exportado com sucesso!");
   }
 
   return (
@@ -92,7 +125,9 @@ function RelatoriosPage() {
       <section className="rounded-2xl border bg-card p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Histórico e Auditoria</h2>
-          <span className="text-xs text-muted-foreground">{auditoria.length} registros</span>
+          <span className="text-xs text-muted-foreground">
+            {filteredAuditoria.length} registros
+          </span>
         </div>
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
@@ -105,7 +140,7 @@ function RelatoriosPage() {
               </tr>
             </thead>
             <tbody>
-              {auditoria.map((a, i) => (
+              {filteredAuditoria.map((a, i) => (
                 <tr key={i} className="border-t">
                   <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">{a.data}</td>
                   <td className="py-3.5 pr-4 font-medium text-foreground">{a.responsavel}</td>
@@ -119,7 +154,7 @@ function RelatoriosPage() {
 
         {/* Mobile Cards */}
         <div className="block md:hidden space-y-3">
-          {auditoria.map((a, i) => (
+          {filteredAuditoria.map((a, i) => (
             <div key={i} className="rounded-xl border bg-card p-4 space-y-2 text-sm">
               <div className="flex items-center justify-between border-b pb-2">
                 <span className="font-mono text-xs font-semibold text-foreground">{a.ativo}</span>

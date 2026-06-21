@@ -78,3 +78,28 @@
     -webkit-font-smoothing: antialiased;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #print-area, #print-area * {
+    visibility: visible;
+  }
+  #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    height: auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 16px !important;
+    padding: 16px !important;
+    background: white !important;
+    margin: 0 !important;
+  }
+  @page {
+    margin: 1cm;
+  }
+}

@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Package, FileBarChart, Settings, LogOut, Plus, User } from "lucide-react";
+import { LayoutDashboard, Package, FileBarChart, Settings, LogOut, User, Key } from "lucide-react";
 import { type ReactNode, useState, useEffect } from "react";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/" },
   { icon: Package, label: "Inventário", to: "/inventario" },
+  { icon: Key, label: "Licenças", to: "/licencas" },
   { icon: FileBarChart, label: "Relatórios", to: "/relatorios" },
   { icon: Settings, label: "Configurações", to: "/configuracoes" },
 ] as const;
@@ -64,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       to={item.to}
                       className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                         active
-                          ? "bg-sidebar-active text-info"
+                          ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50 font-semibold"
                           : "text-sidebar-foreground hover:bg-muted"
                       }`}
                     >
@@ -76,12 +77,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               </nav>
             </div>
             <div className="space-y-3">
-              <Link
-                to="/inventario/novo"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90"
-              >
-                <Plus className="h-4 w-4" /> Novo Ativo
-              </Link>
               <div className="space-y-1 pt-2">
                 <button
                   onClick={handleLogout}
@@ -94,24 +89,30 @@ export function AppShell({ children }: { children: ReactNode }) {
           </aside>
 
           {/* Main */}
-          <main className="min-w-0 flex-1 p-4 md:p-6 pb-20 md:pb-6">
-            <div className="mb-6 flex items-center justify-end gap-4">
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="text-sm font-semibold leading-tight">{nomeExibido}</div>
-                  <div className="text-[11px] text-muted-foreground leading-tight">
-                    {cargoExibido}
+          <main className="min-w-0 flex-1 p-4 md:p-6 pb-20 md:pb-6 flex flex-col justify-between">
+            <div className="flex-1">
+              <div className="mb-6 flex items-center justify-end gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="text-sm font-semibold leading-tight">{nomeExibido}</div>
+                    <div className="text-[11px] text-muted-foreground leading-tight">
+                      {cargoExibido}
+                    </div>
                   </div>
+                  <Avatar className="h-9 w-9 border border-border">
+                    <AvatarFallback className="bg-muted text-muted-foreground">
+                      <User className="h-5 w-5" />
+                    </AvatarFallback>
+                  </Avatar>
                 </div>
-                <Avatar className="h-9 w-9 border border-border">
-                  <AvatarFallback className="bg-muted text-muted-foreground">
-                    <User className="h-5 w-5" />
-                  </AvatarFallback>
-                </Avatar>
               </div>
+
+              {children}
             </div>
 
-            {children}
+            <footer className="mt-8 py-4 border-t text-center text-xs text-muted-foreground shrink-0">
+              Desenvolvido por SMARTins Software Solutions
+            </footer>
           </main>
 
           {/* Bottom Nav Bar (Mobile only) */}
@@ -124,7 +125,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   key={item.label}
                   to={item.to}
                   className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 text-[10px] font-medium transition-colors ${
-                    active ? "text-info" : "text-sidebar-foreground hover:text-foreground"
+                    active
+                      ? "text-zinc-950 dark:text-zinc-50 font-semibold"
+                      : "text-sidebar-foreground hover:text-foreground"
                   }`}
                 >
                   <Icon className="h-5 w-5" />

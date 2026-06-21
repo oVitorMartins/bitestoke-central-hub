@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LicencasRouteImport } from './routes/licencas'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InventarioIndexRouteImport } from './routes/inventario.index'
@@ -25,6 +26,11 @@ const RelatoriosRoute = RelatoriosRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LicencasRoute = LicencasRouteImport.update({
+  id: '/licencas',
+  path: '/licencas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
@@ -56,6 +62,7 @@ const InventarioEditarIdRoute = InventarioEditarIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/configuracoes': typeof ConfiguracoesRoute
+  '/licencas': typeof LicencasRoute
   '/login': typeof LoginRoute
   '/relatorios': typeof RelatoriosRoute
   '/inventario/novo': typeof InventarioNovoRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/configuracoes': typeof ConfiguracoesRoute
+  '/licencas': typeof LicencasRoute
   '/login': typeof LoginRoute
   '/relatorios': typeof RelatoriosRoute
   '/inventario/novo': typeof InventarioNovoRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/configuracoes': typeof ConfiguracoesRoute
+  '/licencas': typeof LicencasRoute
   '/login': typeof LoginRoute
   '/relatorios': typeof RelatoriosRoute
   '/inventario/novo': typeof InventarioNovoRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/configuracoes'
+    | '/licencas'
     | '/login'
     | '/relatorios'
     | '/inventario/novo'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/configuracoes'
+    | '/licencas'
     | '/login'
     | '/relatorios'
     | '/inventario/novo'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/configuracoes'
+    | '/licencas'
     | '/login'
     | '/relatorios'
     | '/inventario/novo'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
+  LicencasRoute: typeof LicencasRoute
   LoginRoute: typeof LoginRoute
   RelatoriosRoute: typeof RelatoriosRoute
   InventarioNovoRoute: typeof InventarioNovoRoute
@@ -135,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/licencas': {
+      id: '/licencas'
+      path: '/licencas'
+      fullPath: '/licencas'
+      preLoaderRoute: typeof LicencasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/configuracoes': {
@@ -178,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,
+  LicencasRoute: LicencasRoute,
   LoginRoute: LoginRoute,
   RelatoriosRoute: RelatoriosRoute,
   InventarioNovoRoute: InventarioNovoRoute,
