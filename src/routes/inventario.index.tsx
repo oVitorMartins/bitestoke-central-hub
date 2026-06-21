@@ -186,84 +186,156 @@ function InventarioPage() {
 
       {/* Table */}
       <section className="rounded-2xl border bg-card">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              <th className="px-5 py-3 text-left">Nome do Ativo</th>
-              <th className="px-3 py-3 text-left">Categoria</th>
-              <th className="px-3 py-3 text-left">Patrimônio</th>
-              <th className="px-3 py-3 text-left">Status</th>
-              <th className="px-3 py-3 text-left">Localização</th>
-              <th className="px-5 py-3 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((a) => {
-              const Icon = a.icon;
-              return (
-                <tr key={a.id} className="border-t">
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
-                        <Icon className="h-5 w-5" />
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <th className="px-5 py-3 text-left">Nome do Ativo</th>
+                <th className="px-3 py-3 text-left">Categoria</th>
+                <th className="px-3 py-3 text-left">Patrimônio</th>
+                <th className="px-3 py-3 text-left">Status</th>
+                <th className="px-3 py-3 text-left">Localização</th>
+                <th className="px-5 py-3 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((a) => {
+                const Icon = a.icon;
+                return (
+                  <tr key={a.id} className="border-t">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-foreground">{a.nome}</div>
+                          <div className="text-[11px] text-muted-foreground">{a.specs}</div>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-foreground">{a.nome}</div>
-                        <div className="text-[11px] text-muted-foreground">{a.specs}</div>
+                    </td>
+                    <td className="px-3 py-4 text-muted-foreground">{a.categoria}</td>
+                    <td className="px-3 py-4 font-mono text-xs text-muted-foreground">
+                      {a.patrimonio}
+                    </td>
+                    <td className="px-3 py-4">
+                      <span
+                        className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(a.status)}`}
+                      >
+                        {a.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-4 text-muted-foreground">{a.localizacao}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          title="Visualizar"
+                          onClick={() => setViewAtivo(a)}
+                          className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          title="Editar"
+                          onClick={() =>
+                            navigate({ to: "/inventario/editar/$id", params: { id: a.id } })
+                          }
+                          className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          title="Ver QR Code"
+                          onClick={() => setQrAtivo(a)}
+                          className="grid h-8 w-8 place-items-center rounded-md bg-foreground text-background transition-opacity hover:opacity-90"
+                        >
+                          <QrCode className="h-4 w-4" />
+                        </button>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-3 py-4 text-muted-foreground">{a.categoria}</td>
-                  <td className="px-3 py-4 font-mono text-xs text-muted-foreground">
-                    {a.patrimonio}
-                  </td>
-                  <td className="px-3 py-4">
-                    <span
-                      className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(a.status)}`}
-                    >
-                      {a.status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-4 text-muted-foreground">{a.localizacao}</td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        title="Visualizar"
-                        onClick={() => setViewAtivo(a)}
-                        className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        title="Editar"
-                        onClick={() =>
-                          navigate({ to: "/inventario/editar/$id", params: { id: a.id } })
-                        }
-                        className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        title="Ver QR Code"
-                        onClick={() => setQrAtivo(a)}
-                        className="grid h-8 w-8 place-items-center rounded-md bg-foreground text-background transition-opacity hover:opacity-90"
-                      >
-                        <QrCode className="h-4 w-4" />
-                      </button>
-                    </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr className="border-t">
+                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                    Nenhum ativo encontrado com os filtros aplicados.
                   </td>
                 </tr>
-              );
-            })}
-            {filtered.length === 0 && (
-              <tr className="border-t">
-                <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
-                  Nenhum ativo encontrado com os filtros aplicados.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="block md:hidden divide-y">
+          {filtered.map((a) => {
+            const Icon = a.icon;
+            return (
+              <div key={a.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-foreground text-sm">{a.nome}</div>
+                      <div className="text-[11px] text-muted-foreground">{a.specs}</div>
+                    </div>
+                  </div>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClass(
+                      a.status,
+                    )}`}
+                  >
+                    {a.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs pt-1 text-muted-foreground">
+                  <div>
+                    <span className="block font-medium">Categoria:</span>
+                    <span className="text-foreground">{a.categoria}</span>
+                  </div>
+                  <div>
+                    <span className="block font-medium">Patrimônio:</span>
+                    <span className="text-foreground font-mono">{a.patrimonio}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="block font-medium">Localização:</span>
+                    <span className="text-foreground">{a.localizacao}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-dashed">
+                  <button
+                    onClick={() => setViewAtivo(a)}
+                    className="flex items-center justify-center gap-1.5 rounded-lg border bg-background px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <Eye className="h-3.5 w-3.5" /> Ficha
+                  </button>
+                  <button
+                    onClick={() => navigate({ to: "/inventario/editar/$id", params: { id: a.id } })}
+                    className="flex items-center justify-center gap-1.5 rounded-lg border bg-background px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Editar
+                  </button>
+                  <button
+                    onClick={() => setQrAtivo(a)}
+                    className="flex items-center justify-center gap-1.5 rounded-lg bg-foreground text-background px-3 py-1.5 text-xs hover:opacity-90 cursor-pointer"
+                  >
+                    <QrCode className="h-3.5 w-3.5" /> QR Code
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {filtered.length === 0 && (
+            <div className="px-5 py-10 text-center text-sm text-muted-foreground">
+              Nenhum ativo encontrado com os filtros aplicados.
+            </div>
+          )}
+        </div>
 
         {/* Pagination */}
         <div className="flex items-center justify-between border-t px-5 py-3">

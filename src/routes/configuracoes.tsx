@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { Plus, Trash2, Pencil, Users, Building2, Tag, Truck } from "lucide-react";
+import { Plus, Trash2, Pencil, Users, Building2, Tag, Truck, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import {
@@ -48,7 +48,8 @@ function ConfiguracoesPage() {
         </p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
+      {/* Desktop view (visible from md and up) */}
+      <div className="hidden md:grid gap-5 lg:grid-cols-[220px_1fr]">
         {/* Vertical tabs */}
         <nav className="flex flex-row gap-2 overflow-x-auto rounded-2xl border bg-card p-2 lg:flex-col lg:overflow-visible">
           {tabs.map((t) => {
@@ -104,6 +105,20 @@ function ConfiguracoesPage() {
             />
           )}
         </section>
+      </div>
+
+      {/* Mobile restriction message (visible on screens smaller than md) */}
+      <div className="flex md:hidden flex-col items-center justify-center text-center p-8 border bg-card rounded-2xl min-h-[350px] space-y-4">
+        <div className="grid h-16 w-16 place-items-center rounded-full bg-muted text-muted-foreground">
+          <Monitor className="h-8 w-8" />
+        </div>
+        <div className="space-y-2 max-w-sm">
+          <h2 className="text-lg font-bold text-foreground">Acesso Restrito ao Desktop</h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Por motivos de segurança e usabilidade, a aba de Configurações está disponível apenas
+            para computadores. Por favor, acesse através de um desktop.
+          </p>
+        </div>
       </div>
     </AppShell>
   );

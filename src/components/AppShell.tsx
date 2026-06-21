@@ -13,10 +13,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <div className="min-h-screen bg-background p-4 flex flex-col justify-center">
-      <div className="mx-auto flex w-full max-w-[1400px] min-h-[calc(100vh-2rem)] gap-0 overflow-hidden rounded-3xl border-2 border-violet/30 bg-background shadow-sm">
+    <div className="min-h-screen bg-background p-0 md:p-4 flex flex-col justify-center">
+      <div className="mx-auto flex w-full max-w-[1400px] min-h-screen md:min-h-[calc(100vh-2rem)] gap-0 overflow-hidden rounded-none md:rounded-3xl border-0 md:border-2 border-violet/30 bg-background shadow-none md:shadow-sm">
         {/* Sidebar */}
-        <aside className="flex w-64 min-w-[16rem] shrink-0 flex-col justify-between border-r bg-sidebar p-5">
+        <aside className="hidden md:flex w-64 min-w-[16rem] shrink-0 flex-col justify-between border-r bg-sidebar p-5">
           <div>
             <div className="mb-8 flex items-center gap-3">
               <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary text-primary-foreground">
@@ -69,7 +69,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </aside>
 
         {/* Main */}
-        <main className="min-w-0 flex-1 p-6">
+        <main className="min-w-0 flex-1 p-4 md:p-6 pb-20 md:pb-6">
           {/* Topbar */}
           <div className="mb-6 flex items-center justify-end gap-4">
             <div className="flex items-center gap-3">
@@ -83,6 +83,26 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           {children}
         </main>
+
+        {/* Bottom Nav Bar (Mobile only) */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t bg-sidebar flex items-center justify-around z-40 px-2 shadow-lg">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.to;
+            return (
+              <Link
+                key={item.label}
+                to={item.to}
+                className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 text-[10px] font-medium transition-colors ${
+                  active ? "text-info" : "text-sidebar-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

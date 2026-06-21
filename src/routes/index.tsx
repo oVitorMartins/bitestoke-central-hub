@@ -110,7 +110,7 @@ function Dashboard() {
               Ver tudo
             </Link>
           </div>
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -133,6 +133,28 @@ function Dashboard() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile View */}
+          <div className="block md:hidden space-y-3">
+            {auditoria.slice(0, 5).map((a, i) => (
+              <div key={i} className="rounded-xl border bg-card p-4 space-y-2 text-sm">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <span className="font-mono text-xs font-semibold text-foreground">{a.ativo}</span>
+                  <span className="text-xs text-muted-foreground">{a.data}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                  <div>
+                    <span className="text-muted-foreground block font-medium">Responsável:</span>
+                    <span className="text-foreground font-semibold">{a.responsavel}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block font-medium">Movimentação:</span>
+                    <span className="text-foreground">{a.movimentacao}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
