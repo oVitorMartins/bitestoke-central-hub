@@ -17,7 +17,7 @@ export const Route = createFileRoute("/inventario/novo")({
   component: NovoAtivoPage,
 });
 
-const statusOptions = ["Disponível", "Em Uso", "Manutenção", "Baixado"] as const;
+const statusOptions = ["Estoque", "Em Uso", "Em Manutenção", "Descarte"] as const;
 type Status = (typeof statusOptions)[number];
 
 function Field({

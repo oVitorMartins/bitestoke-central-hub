@@ -1,6 +1,6 @@
 import { Laptop, Monitor, Router as RouterIcon, Printer } from "lucide-react";
 
-export type Status = "Em Uso" | "Manutenção" | "Estoque" | "Aguardando Descarte";
+export type Status = "Estoque" | "Em Uso" | "Em Manutenção" | "Descarte";
 export type Criticidade = "Baixa" | "Média" | "Alta" | "Crítica";
 
 export type Ativo = {
@@ -22,7 +22,7 @@ export type Ativo = {
 };
 
 export const categorias = ["Notebook", "Monitor", "Rede", "Periféricos"] as const;
-export const statusList: Status[] = ["Em Uso", "Manutenção", "Estoque", "Aguardando Descarte"];
+export const statusList: Status[] = ["Estoque", "Em Uso", "Em Manutenção", "Descarte"];
 export const setores = ["TI", "RH", "TI - Almoxarifado", "Operações"] as const;
 
 export const ativos: Ativo[] = [
@@ -52,7 +52,7 @@ export const ativos: Ativo[] = [
     categoria: "Monitor",
     patrimonio: "PAT-2023-045",
     serie: "SN-DELL-U27-2231",
-    status: "Manutenção",
+    status: "Em Manutenção",
     localizacao: "RH",
     dataAquisicao: "05/07/2023",
     valor: "R$ 4.290,00",
@@ -86,7 +86,7 @@ export const ativos: Ativo[] = [
     categoria: "Periféricos",
     patrimonio: "PAT-2022-112",
     serie: "SN-HP-LJP-4412",
-    status: "Aguardando Descarte",
+    status: "Descarte",
     localizacao: "Operações",
     dataAquisicao: "22/09/2022",
     valor: "R$ 2.180,00",

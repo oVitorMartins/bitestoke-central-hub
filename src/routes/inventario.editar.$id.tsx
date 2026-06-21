@@ -23,7 +23,7 @@ export const Route = createFileRoute("/inventario/editar/$id")({
   component: EditarAtivoPage,
 });
 
-const statusOptions = ["Disponível", "Em Uso", "Manutenção", "Baixado"] as const;
+const statusOptions = ["Estoque", "Em Uso", "Em Manutenção", "Descarte"] as const;
 type Status = (typeof statusOptions)[number];
 
 function Field({
@@ -102,9 +102,11 @@ function Select({
 }
 
 function mapStatus(s: string): Status {
-  if (s === "Em Uso" || s === "Manutenção") return s;
-  if (s === "Aguardando Descarte") return "Baixado";
-  return "Disponível";
+  if (s === "Em Uso" || s === "Em Manutenção" || s === "Estoque" || s === "Descarte") return s;
+  if (s === "Manutenção") return "Em Manutenção";
+  if (s === "Aguardando Descarte") return "Descarte";
+  if (s === "Disponível") return "Estoque";
+  return "Estoque";
 }
 
 function formatBRL(cents: number): string {
