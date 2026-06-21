@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Download, FileBarChart } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { categorias, statusList, setores } from "@/lib/ativos";
+import { categorias, statusList, setores, auditoria } from "@/lib/ativos";
 import { useState } from "react";
 
 export const Route = createFileRoute("/relatorios")({
@@ -14,24 +14,6 @@ export const Route = createFileRoute("/relatorios")({
   }),
   component: RelatoriosPage,
 });
-
-type Auditoria = {
-  data: string;
-  responsavel: string;
-  ativo: string;
-  movimentacao: string;
-};
-
-const auditoria: Auditoria[] = [
-  { data: "21/06/2026 14:32", responsavel: "Vitor Santos", ativo: "AST-2026-001", movimentacao: "Alterou status de Disponível para Em Uso" },
-  { data: "21/06/2026 11:08", responsavel: "Camila Ribeiro", ativo: "AST-2026-014", movimentacao: "Cadastrou novo ativo (Monitor LG UltraWide)" },
-  { data: "20/06/2026 17:45", responsavel: "Bruno Almeida", ativo: "AST-2025-098", movimentacao: "Transferiu ativo do setor TI para Financeiro" },
-  { data: "20/06/2026 09:21", responsavel: "Vitor Santos", ativo: "AST-2025-072", movimentacao: "Alterou status de Em Uso para Em Manutenção" },
-  { data: "19/06/2026 16:10", responsavel: "Larissa Costa", ativo: "AST-2024-203", movimentacao: "Atribuiu ativo ao colaborador João Pedro (RH)" },
-  { data: "19/06/2026 10:02", responsavel: "Bruno Almeida", ativo: "AST-2025-145", movimentacao: "Atualizou localização para Almoxarifado Central" },
-  { data: "18/06/2026 15:58", responsavel: "Camila Ribeiro", ativo: "AST-2025-061", movimentacao: "Editou número da nota fiscal e valor de aquisição" },
-  { data: "18/06/2026 08:40", responsavel: "Vitor Santos", ativo: "AST-2026-007", movimentacao: "Concluiu manutenção e alterou status para Disponível" },
-];
 
 function RelatoriosPage() {
   const [status, setStatus] = useState("");

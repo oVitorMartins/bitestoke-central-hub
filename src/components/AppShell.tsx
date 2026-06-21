@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="min-w-0">
                 <h1 className="truncate font-bold text-foreground">BitEstoque</h1>
                 <p className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Hospital Unidade Suzano
+                  Hospital Maternidade de Suzano
                 </p>
               </div>
             </div>
@@ -46,11 +46,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Link
                     key={item.label}
                     to={item.to}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                      active
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${active
                         ? "bg-sidebar-active text-info"
                         : "text-sidebar-foreground hover:bg-muted"
-                    }`}
+                      }`}
                   >
                     <Icon className="h-4 w-4" />
                     {item.label}

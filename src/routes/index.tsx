@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus, QrCode, TrendingUp } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { auditoria } from "@/lib/ativos";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -14,31 +15,12 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
-const movimentacoes = [
-  { ativo: "Notebook Dell XPS 13", id: "#DXP-1029", acao: "TRANSFERÊNCIA", acaoTone: "info", destino: "Setor Financeiro", data: "Hoje, 10:45" },
-  { ativo: "Monitor LG UltraWide", id: "#MON-4421", acao: "NOVO CADASTRO", acaoTone: "success", destino: "Almoxarifado Central", data: "Hoje, 09:12" },
-  { ativo: 'MacBook Pro 14"', id: "#MAC-9980", acao: "MANUTENÇÃO", acaoTone: "warning", destino: "Suporte Técnico", data: "Ontem, 16:30" },
-  { ativo: "Cadeira Aeron Miller", id: "#MOB-2211", acao: "ATRIBUIÇÃO", acaoTone: "violet", destino: "RH - Sala 04", data: "Ontem, 14:00" },
-  { ativo: 'iPad Pro 11"', id: "#TAB-5561", acao: "RETORNO", acaoTone: "danger", destino: "TI - Inventory", data: "Ontem, 11:20" },
-] as const;
-
 const categorias = [
   { nome: "Notebooks", pct: 45, color: "oklch(0.2 0.02 270)" },
   { nome: "Monitores", pct: 25, color: "oklch(0.45 0.02 270)" },
   { nome: "Periféricos", pct: 15, color: "oklch(0.7 0.02 270)" },
   { nome: "Outros", pct: 15, color: "oklch(0.85 0.03 290)" },
 ];
-
-function toneClass(tone: string) {
-  switch (tone) {
-    case "info": return "bg-info-bg text-info";
-    case "success": return "bg-success-bg text-success";
-    case "warning": return "bg-warning-bg text-warning";
-    case "danger": return "bg-danger-bg text-danger";
-    case "violet": return "bg-violet-bg text-violet";
-    default: return "bg-muted text-muted-foreground";
-  }
-}
 
 function DonutChart() {
   const radius = 70;
@@ -116,35 +98,30 @@ function Dashboard() {
         <section className="rounded-2xl border bg-card p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold">Movimentações Recentes</h2>
-            <a href="#" className="text-xs font-medium text-muted-foreground hover:text-foreground">Ver tudo</a>
+            <Link to="/relatorios" className="text-xs font-medium text-muted-foreground hover:text-foreground">Ver tudo</Link>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <th className="pb-3 text-left">Ativo</th>
-                <th className="pb-3 text-left">Ação</th>
-                <th className="pb-3 text-left">Destino</th>
-                <th className="pb-3 text-left">Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {movimentacoes.map((m, i) => (
-                <tr key={i} className="border-t">
-                  <td className="py-3.5 pr-4">
-                    <div className="font-semibold text-foreground">{m.ativo}</div>
-                    <div className="font-mono text-[10px] uppercase text-muted-foreground">ID: {m.id}</div>
-                  </td>
-                  <td className="py-3.5 pr-4">
-                    <span className={`inline-block rounded-md px-2 py-1 text-[10px] font-bold tracking-wider ${toneClass(m.acaoTone)}`}>
-                      {m.acao}
-                    </span>
-                  </td>
-                  <td className="py-3.5 pr-4 text-muted-foreground">{m.destino}</td>
-                  <td className="py-3.5 text-muted-foreground">{m.data}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <th className="pb-3 text-left">Data</th>
+                  <th className="pb-3 text-left">Responsável pela Movimentação</th>
+                  <th className="pb-3 text-left">Ativo Afetado</th>
+                  <th className="pb-3 text-left">Movimentação</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {auditoria.slice(0, 5).map((a, i) => (
+                  <tr key={i} className="border-t">
+                    <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">{a.data}</td>
+                    <td className="py-3.5 pr-4 font-medium text-foreground">{a.responsavel}</td>
+                    <td className="py-3.5 pr-4 font-mono text-xs">{a.ativo}</td>
+                    <td className="py-3.5 text-muted-foreground">{a.movimentacao}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <section className="rounded-2xl border bg-card p-5">
