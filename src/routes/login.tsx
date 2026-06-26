@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, Package } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -76,11 +76,10 @@ function LoginPage() {
       {/* Lado Esquerdo - Institucional (Visível apenas em telas médias e grandes) */}
       <div className="hidden md:flex md:w-1/2 bg-zinc-900 dark:bg-zinc-950 p-12 flex-col justify-between text-white relative">
         <div className="absolute inset-0 bg-radial from-zinc-800 to-transparent opacity-30 pointer-events-none" />
-        <div className="flex items-center gap-3 relative z-10">
-          <div className="grid h-10 w-10 place-items-center rounded-lg bg-white text-zinc-950">
-            <Package className="h-5 w-5" />
-          </div>
-          <span className="text-xl font-bold tracking-tight">BitEstoque</span>
+        <div className="flex items-center relative z-10">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent tracking-tight">
+            BitEstoque
+          </h1>
         </div>
 
         <div className="space-y-4 relative z-10 max-w-md">
@@ -94,7 +93,7 @@ function LoginPage() {
         </div>
 
         <div className="text-xs text-zinc-500 relative z-10">
-          © {new Date().getFullYear()} BitEstoque. Todos os direitos reservados.
+          © Desenvolvido por SMARTins Software Solutions. Todos os direitos reservados.
         </div>
       </div>
 
@@ -102,11 +101,10 @@ function LoginPage() {
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 bg-background">
         <div className="w-full max-w-[400px] space-y-8">
           {/* Header Mobile / Brand visible only on small screens */}
-          <div className="flex flex-col items-center md:hidden mb-8 space-y-3">
-            <div className="grid h-12 w-12 place-items-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950">
-              <Package className="h-6 w-6" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">BitEstoque</h1>
+          <div className="flex flex-col items-center md:hidden mb-8">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-zinc-900 via-zinc-700 to-zinc-500 dark:from-white dark:via-zinc-100 dark:to-zinc-400 bg-clip-text text-transparent tracking-tight">
+              BitEstoque
+            </h1>
           </div>
 
           <div className="space-y-2 text-center md:text-left">

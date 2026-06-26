@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { Info, ShoppingCart, AlignLeft, Tag, Camera, QrCode, ChevronDown, X } from "lucide-react";
-import { useState, useRef, type FormEvent, type ChangeEvent } from "react";
+import { useState, useRef, useEffect, type FormEvent, type ChangeEvent } from "react";
 import { toast } from "sonner";
+import { CATEGORIAS_PADRAO } from "@/lib/ativos";
+import { pb, createAuditLog } from "@/lib/pocketbase";
 
 export const Route = createFileRoute("/inventario/novo")({
   component: NovoAtivoPage,
@@ -106,6 +108,20 @@ function NovoAtivoPage() {
   const [nome, setNome] = useState("");
   const [patrimonio, setPatrimonio] = useState("");
   const [categoria, setCategoria] = useState("");
+  const [categoriasDb, setCategoriasDb] = useState<{ id: string; nome: string }[]>([]);
+
+  useEffect(() => {
+    async function fetchCategorias() {
+      try {
+        const records = await pb.collection("categorias").getFullList({ $autoCancel: false });
+        setCategoriasDb(records.map((r) => ({ id: r.id, nome: r.nome })));
+      } catch (err) {
+        console.error("Failed to fetch categories from PocketBase", err);
+        setCategoriasDb(CATEGORIAS_PADRAO.map((c) => ({ id: c.id, nome: c.nome })));
+      }
+    }
+    fetchCategorias();
+  }, []);
   const [localizacao, setLocalizacao] = useState("");
   const [status, setStatus] = useState<Status | "">("");
   const [criticidade, setCriticidade] = useState("Baixa");
@@ -114,6 +130,12 @@ function NovoAtivoPage() {
   const [valorCents, setValorCents] = useState(0);
   const [foto, setFoto] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [marcaModelo, setMarcaModelo] = useState("");
+  const [serie, setSerie] = useState("");
+  const [notaFiscal, setNotaFiscal] = useState("");
+  const [observacoes, setObservacoes] = useState("");
+  const [dataAquisicao, setDataAquisicao] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -143,8 +165,10 @@ function NovoAtivoPage() {
     reader.readAsDataURL(file);
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const newErrors: Record<string, string> = {};
     if (!nome.trim()) newErrors.nome = "Informe o nome do ativo.";
     if (!patrimonio.trim()) newErrors.patrimonio = "Informe o código de patrimônio.";
@@ -161,27 +185,45 @@ function NovoAtivoPage() {
     }
 
     setErrors({});
-    const fd = new FormData(e.currentTarget);
-    const entries = Object.fromEntries(fd.entries()) as Record<string, string>;
-    const payload = {
-      ...entries,
-      nome,
-      patrimonio,
-      status,
-      categoria,
-      localizacao,
-      criticidade,
-      alugado,
-      fornecedor: alugado ? fornecedor : null,
-      valor: valorCents / 100,
-      foto: foto ? "[imagem em base64]" : null,
-    };
+    setIsSubmitting(true);
+    
+    try {
+      const categoryObj = categoriasDb.find((c) => c.nome === categoria);
+      const categoriaId = categoryObj ? categoryObj.id : "";
 
-    console.log("Novo ativo (mock):", payload);
-    toast.success("Ativo cadastrado com sucesso!", {
-      description: nome,
-    });
-    navigate({ to: "/inventario" });
+      const nomeDoEstado = nome;
+      const patrimonioDoEstado = patrimonio;
+      const idDaCategoriaSelecionada = categoriaId;
+      const statusSelecionado = (status === "Estoque" || !status) ? "Em Estoque" : status;
+
+      const createdRecord = await pb.collection('ativos').create({
+        nome: nomeDoEstado,
+        codigo_patrimonio: patrimonioDoEstado,
+        categoria: idDaCategoriaSelecionada,
+        status: statusSelecionado
+      }, {
+        $autoCancel: false
+      });
+
+      await createAuditLog(
+        createdRecord.id,
+        "Cadastro",
+        `Dispositivo ${nomeDoEstado} (Patrimônio: ${patrimonioDoEstado}) foi cadastrado no sistema e inserido no estoque.`
+      );
+
+      toast.success("Ativo cadastrado com sucesso!", {
+        description: nome,
+      });
+      navigate({ to: "/inventario" });
+    } catch (err: any) {
+      console.error("Erro detalhado do PocketBase:", err?.data || err);
+      console.error("Failed to save asset in PocketBase", err);
+      toast.error("Erro ao cadastrar ativo no banco de dados.", {
+        description: err instanceof Error ? err.message : "Erro desconhecido",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -215,6 +257,8 @@ function NovoAtivoPage() {
                   <Field label="Marca / Modelo">
                     <input
                       name="marcaModelo"
+                      value={marcaModelo}
+                      onChange={(e) => setMarcaModelo(e.target.value)}
                       className={`${inputCls} font-mono`}
                       placeholder="Ex: Apple / A2780"
                     />
@@ -222,6 +266,8 @@ function NovoAtivoPage() {
                   <Field label="Número de Série (S/N)">
                     <input
                       name="serie"
+                      value={serie}
+                      onChange={(e) => setSerie(e.target.value)}
                       className={`${inputCls} font-mono`}
                       placeholder="EX: C02XG1..."
                     />
@@ -251,7 +297,13 @@ function NovoAtivoPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Data de Aquisição">
-                    <input type="date" name="dataAquisicao" className={inputCls} />
+                    <input
+                      type="date"
+                      name="dataAquisicao"
+                      value={dataAquisicao}
+                      onChange={(e) => setDataAquisicao(e.target.value)}
+                      className={inputCls}
+                    />
                   </Field>
                   <Field label="Valor do Ativo">
                     <input
@@ -266,6 +318,8 @@ function NovoAtivoPage() {
                 <Field label="Número da Nota Fiscal / Contrato">
                   <input
                     name="notaFiscal"
+                    value={notaFiscal}
+                    onChange={(e) => setNotaFiscal(e.target.value)}
                     className={inputCls}
                     placeholder={
                       alugado ? "Ex: Número do Contrato de Locação" : "Ex: NF-123456 / CTR-2024-01"
@@ -294,6 +348,8 @@ function NovoAtivoPage() {
             <Card icon={AlignLeft} title="Observações">
               <textarea
                 name="observacoes"
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
                 rows={5}
                 className={`${inputCls} resize-y`}
                 placeholder="Detalhes adicionais, histórico de problemas ou especificações técnicas..."
@@ -354,7 +410,7 @@ function NovoAtivoPage() {
                     value={categoria}
                     onChange={setCategoria}
                     hasError={!!errors.categoria}
-                    options={["Notebook", "Monitor", "Rede", "Periféricos", "Mobiliário", "Outros"]}
+                    options={categoriasDb.map((c) => c.nome)}
                   />
                 </Field>
                 <Field label="Localização" required error={errors.localizacao}>
@@ -421,9 +477,10 @@ function NovoAtivoPage() {
             </Link>
             <button
               type="submit"
-              className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-semibold text-background hover:opacity-90"
+              disabled={isSubmitting}
+              className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50 cursor-pointer"
             >
-              Salvar Ativo
+              {isSubmitting ? "Salvando..." : "Salvar Ativo"}
             </button>
           </div>
         </div>

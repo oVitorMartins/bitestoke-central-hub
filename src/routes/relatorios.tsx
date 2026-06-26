@@ -3,7 +3,8 @@ import { Download, FileBarChart } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { categorias, statusList, setores, auditoria, ativos as ativosMock } from "@/lib/ativos";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { pb } from "@/lib/pocketbase";
 
 export const Route = createFileRoute("/relatorios")({
   head: () => ({
@@ -15,28 +16,90 @@ export const Route = createFileRoute("/relatorios")({
   component: RelatoriosPage,
 });
 
+function getActionBadgeClass(action: string) {
+  const a = (action || "").trim().toLowerCase();
+  switch (a) {
+    case "cadastro":
+      return "bg-green-50 text-green-700 border border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900/50";
+    case "movimentação":
+    case "movimentacao":
+      return "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50";
+    case "alteração de status":
+    case "alteracao de status":
+      return "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50";
+    case "edição":
+    case "edicao":
+      return "bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-900/50";
+    case "descarte de ativo":
+    case "descarte":
+      return "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50";
+    default:
+      return "bg-zinc-50 text-zinc-700 border border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800";
+  }
+}
+
 function RelatoriosPage() {
   const [status, setStatus] = useState("");
   const [categoria, setCategoria] = useState("");
   const [setor, setSetor] = useState("");
+  const [logs, setLogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchLogs() {
+      try {
+        const records = await pb.collection("auditoria").getFullList({
+          sort: "-created",
+          expand: "usuario,ativo_vinculado,ativo_vinculado.categoria",
+          $autoCancel: false,
+        });
+        setLogs(records);
+      } catch (err) {
+        console.error("Failed to fetch audit logs for reports", err);
+      }
+    }
+    fetchLogs();
+  }, []);
+
+  const mappedLogs = useMemo(() => {
+    return logs.map((log) => {
+      const asset = log.expand?.ativo_vinculado;
+      const user = log.expand?.usuario;
+      const catName = asset?.expand?.categoria?.nome || asset?.categoria_nome || "";
+
+      let displayStatus = "";
+      if (asset?.status === "Em Estoque" || asset?.status === "Estoque") {
+        displayStatus = "Estoque";
+      } else if (asset?.status) {
+        displayStatus = asset.status;
+      }
+
+      return {
+        id: log.id,
+        data: new Date(log.created).toLocaleString("pt-BR").slice(0, 16),
+        responsavel: user?.nome || "Sistema / Admin",
+        ativo: asset ? `${asset.nome} (${asset.codigo_patrimonio})` : "Ativo Excluído",
+        movimentacao: log.descricao || "",
+        acao: log.acao || "Movimentação",
+        statusAtivo: displayStatus,
+        categoriaAtivo: catName,
+        setorAtivo: asset?.localizacao || "",
+      };
+    });
+  }, [logs]);
 
   const filteredAuditoria = useMemo(() => {
-    return auditoria.filter((a) => {
-      const asset = ativosMock.find(
-        (item) =>
-          item.patrimonio === a.ativo || item.id === a.ativo || a.ativo.includes(item.patrimonio),
-      );
-      if (status && asset && asset.status !== status) return false;
-      if (categoria && asset && asset.categoria !== categoria) return false;
-      if (setor && asset && asset.localizacao !== setor) return false;
+    return mappedLogs.filter((item) => {
+      if (status && item.statusAtivo !== status) return false;
+      if (categoria && item.categoriaAtivo !== categoria) return false;
+      if (setor && item.setorAtivo !== setor) return false;
       return true;
     });
-  }, [status, categoria, setor]);
+  }, [mappedLogs, status, categoria, setor]);
 
   function exportar() {
-    const headers = ["Data/Hora", "Responsável", "Ativo Afetado", "Movimentação"];
+    const headers = ["Data/Hora", "Responsável", "Ativo Afetado", "Ação", "Movimentação"];
 
-    const rows = filteredAuditoria.map((a) => [a.data, a.responsavel, a.ativo, a.movimentacao]);
+    const rows = filteredAuditoria.map((a) => [a.data, a.responsavel, a.ativo, a.acao, a.movimentacao]);
 
     const csvContent = [
       "sep=;",
@@ -145,7 +208,12 @@ function RelatoriosPage() {
                   <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">{a.data}</td>
                   <td className="py-3.5 pr-4 font-medium text-foreground">{a.responsavel}</td>
                   <td className="py-3.5 pr-4 font-mono text-xs">{a.ativo}</td>
-                  <td className="py-3.5 text-muted-foreground">{a.movimentacao}</td>
+                  <td className="py-3.5 text-muted-foreground">
+                    <span className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-bold mr-2 uppercase ${getActionBadgeClass(a.acao)}`}>
+                      {a.acao}
+                    </span>
+                    {a.movimentacao}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -167,7 +235,12 @@ function RelatoriosPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground block font-medium">Movimentação:</span>
-                  <span className="text-foreground">{a.movimentacao}</span>
+                  <span className="text-foreground">
+                    <span className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold mr-1.5 uppercase ${getActionBadgeClass(a.acao)}`}>
+                      {a.acao}
+                    </span>
+                    {a.movimentacao}
+                  </span>
                 </div>
               </div>
             </div>

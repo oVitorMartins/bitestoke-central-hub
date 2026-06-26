@@ -16,8 +16,71 @@ import {
   Plus,
   Trash2,
   Lock,
+  Computer,
+  Laptop,
+  Monitor,
+  Tablet,
+  Server,
+  Router,
+  BatteryCharging,
+  Camera,
+  Fingerprint,
+  Tv,
+  Phone,
+  Cpu,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { pb, createAuditLog } from "@/lib/pocketbase";
+
+function getIconForCategory(categoria: string) {
+  const c = (categoria || "").trim().toLowerCase();
+  switch (c) {
+    case "desktop":
+    case "computador":
+      return Computer;
+    case "notebook":
+    case "laptop":
+      return Laptop;
+    case "monitor":
+    case "tela":
+      return Monitor;
+    case "impressora":
+    case "multifuncional":
+      return Printer;
+    case "tablet":
+      return Tablet;
+    case "servidor":
+      return Server;
+    case "rede":
+    case "switch":
+    case "roteador":
+      return Router;
+    case "no-break":
+    case "bateria":
+      return BatteryCharging;
+    case "câmera":
+    case "camera":
+    case "cftv":
+      return Camera;
+    case "leitor":
+    case "scanner":
+      return QrCode;
+    case "relógio de ponto":
+    case "relogio de ponto":
+    case "biometria":
+      return Fingerprint;
+    case "televisão":
+    case "televisao":
+    case "painel":
+      return Tv;
+    case "telefone":
+    case "interfone":
+    case "ramal":
+      return Phone;
+    default:
+      return Cpu;
+  }
+}
 import {
   Sheet,
   SheetContent,
@@ -42,6 +105,7 @@ import {
   auditoria,
   type Ativo,
   type Status,
+  type Criticidade,
 } from "@/lib/ativos";
 
 export const Route = createFileRoute("/inventario/")({
@@ -102,6 +166,59 @@ function SelectChip({
   );
 }
 
+function getActionBadgeClass(action: string) {
+  const a = (action || "").trim().toLowerCase();
+  switch (a) {
+    case "cadastro":
+      return "bg-green-50 text-green-700 border border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900/50";
+    case "movimentação":
+    case "movimentacao":
+      return "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50";
+    case "alteração de status":
+    case "alteracao de status":
+      return "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50";
+    case "edição":
+    case "edicao":
+      return "bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-900/50";
+    case "descarte de ativo":
+    case "descarte":
+      return "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50";
+    default:
+      return "bg-zinc-50 text-zinc-700 border border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800";
+  }
+}
+
+function mapRecordToAtivo(r: any): Ativo {
+  const categoryName = r.expand?.categoria?.nome || r.categoria_nome || "Geral";
+  
+  let displayStatus: Status = "Estoque";
+  if (r.status === "Em Uso" || r.status === "Em Manutenção" || r.status === "Descarte") {
+    displayStatus = r.status as Status;
+  } else if (r.status === "Em Estoque" || r.status === "Estoque") {
+    displayStatus = "Estoque";
+  }
+
+  const specsStr = r.marca_modelo || r.observacoes || "";
+
+  return {
+    id: r.id,
+    nome: r.nome || "",
+    specs: specsStr,
+    icon: Laptop,
+    marcaModelo: r.marca_modelo || "",
+    categoria: categoryName,
+    patrimonio: r.codigo_patrimonio || "",
+    serie: r.numero_serie || "",
+    status: displayStatus,
+    localizacao: r.localizacao || "TI",
+    dataAquisicao: r.data_aquisicao ? new Date(r.data_aquisicao).toLocaleDateString("pt-BR") : "",
+    valor: r.valor ? r.valor.toString() : "",
+    notaFiscal: r.nota_fiscal || "",
+    criticidade: (r.criticidade as Criticidade) || "Baixa",
+    observacoes: r.observacoes || "",
+  };
+}
+
 function InventarioPage() {
   const navigate = useNavigate();
   const [qrAtivo, setQrAtivo] = useState<Ativo | null>(null);
@@ -112,18 +229,64 @@ function InventarioPage() {
   const [fStatus, setFStatus] = useState("");
   const [fSetor, setFSetor] = useState("");
 
-  const [ativosList, setAtivosList] = useState<Ativo[]>(ativosMock);
+  const [ativos, setAtivos] = useState<Ativo[]>([]);
+  const ativosList = ativos;
+  const setAtivosList = setAtivos;
   const [currentUser, setCurrentUser] = useState<{ nome: string; perfil: string } | null>(null);
+  const [categoriasDb, setCategoriasDb] = useState<string[]>([]);
+  const [historicoLogs, setHistoricoLogs] = useState<any[]>([]);
 
-  // Disposal states
-  const [isDisposalOpen, setIsDisposalOpen] = useState(false);
-  const [disposalAtivo, setDisposalAtivo] = useState<Ativo | null>(null);
-  const [disposalReason, setDisposalReason] = useState("");
+  useEffect(() => {
+    if (!viewAtivo) {
+      setHistoricoLogs([]);
+      return;
+    }
+    const ativoId = viewAtivo.id;
+    async function fetchLogs() {
+      try {
+        const records = await pb.collection("auditoria").getFullList({
+          filter: `ativo_vinculado = "${ativoId}"`,
+          sort: "-created",
+          $autoCancel: false,
+        });
+        setHistoricoLogs(records);
+      } catch (err) {
+        console.error("Failed to fetch audit logs for asset", err);
+      }
+    }
+    fetchLogs();
+  }, [viewAtivo]);
 
-  const [isBatchPrintOpen, setIsBatchPrintOpen] = useState(false);
-  const [printCategoria, setPrintCategoria] = useState("");
-  const [printSetor, setPrintSetor] = useState("");
-  const [ativosParaImprimir, setAtivosParaImprimir] = useState<Ativo[]>([]);
+  async function fetchAtivos() {
+    try {
+      const records = await pb.collection("ativos").getFullList({
+        expand: "categoria",
+        $autoCancel: false,
+      });
+      setAtivos(records.map(mapRecordToAtivo));
+    } catch (err) {
+      console.error("Failed to fetch assets from PocketBase", err);
+      setAtivos([]);
+    }
+  }
+
+  useEffect(() => {
+    fetchAtivos();
+  }, []);
+
+  useEffect(() => {
+    async function fetchCategorias() {
+      try {
+        const records = await pb.collection("categorias").getFullList({ $autoCancel: false });
+        setCategoriasDb(records.map((r) => r.nome));
+      } catch (err) {
+        console.error("Failed to fetch categories from PocketBase", err);
+        // Fallback to local hardcoded categories
+        setCategoriasDb(Array.from(categorias));
+      }
+    }
+    fetchCategorias();
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem("bitestoque_user");
@@ -136,6 +299,18 @@ function InventarioPage() {
     }
   }, []);
 
+  // Disposal states
+  const [isDisposalOpen, setIsDisposalOpen] = useState(false);
+  const [disposalAtivo, setDisposalAtivo] = useState<Ativo | null>(null);
+  const [disposalReason, setDisposalReason] = useState("");
+
+  const [isBatchPrintOpen, setIsBatchPrintOpen] = useState(false);
+  const [printCategoria, setPrintCategoria] = useState("");
+  const [printSetor, setPrintSetor] = useState("");
+  const [ativosParaImprimir, setAtivosParaImprimir] = useState<Ativo[]>([]);
+
+
+
   const canDispose =
     currentUser?.perfil === "Administrador" ||
     currentUser?.perfil === "Admin" ||
@@ -147,7 +322,7 @@ function InventarioPage() {
     setIsDisposalOpen(true);
   };
 
-  const handleConfirmDisposal = () => {
+  const handleConfirmDisposal = async () => {
     if (!disposalReason.trim()) {
       toast.error("Por favor, insira o motivo do descarte.");
       return;
@@ -155,6 +330,25 @@ function InventarioPage() {
 
     if (!disposalAtivo) return;
 
+    let statusUpdated = false;
+    try {
+      // 1. Update active status to "Descarte" in PocketBase
+      await pb.collection("ativos").update(disposalAtivo.id, {
+        status: "Descarte",
+      }, { $autoCancel: false });
+      statusUpdated = true;
+    } catch (err) {
+      console.error("Failed to update asset status in PocketBase", err);
+      toast.error("Erro ao atualizar o status do ativo no banco de dados.", {
+        description: err instanceof Error ? err.message : "Erro desconhecido",
+      });
+      return;
+    }
+
+    // 2. Create the audit log in PocketBase
+    await createAuditLog(disposalAtivo.id, "Descarte de Ativo", disposalReason.trim());
+
+    // Local state update since the critical status update succeeded
     setAtivosList((prev) =>
       prev.map((a) => (a.id === disposalAtivo.id ? { ...a, status: "Descarte" } : a)),
     );
@@ -165,10 +359,9 @@ function InventarioPage() {
       ativo: disposalAtivo.patrimonio,
       movimentacao: `Descartou ativo. Motivo: ${disposalReason.trim()}`,
     };
-
     auditoria.unshift(newLog);
 
-    toast.success(`Ativo ${disposalAtivo.patrimonio} descartado com sucesso!`);
+    toast.success("Ativo descartado com sucesso!");
     setIsDisposalOpen(false);
     setDisposalReason("");
     setDisposalAtivo(null);
@@ -288,6 +481,12 @@ function InventarioPage() {
           </p>
         </div>
         <div className="flex items-center gap-2.5">
+          <Link
+            to="/inventario/novo"
+            className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:opacity-90 cursor-pointer"
+          >
+            <Plus className="h-4 w-4" /> Novo Ativo
+          </Link>
           <button
             onClick={() => {
               setPrintCategoria("");
@@ -326,7 +525,7 @@ function InventarioPage() {
         <SelectChip
           value={fCategoria}
           onChange={setFCategoria}
-          options={categorias}
+          options={categoriasDb}
           allLabel="Todas Categorias"
         />
         <SelectChip
@@ -365,7 +564,7 @@ function InventarioPage() {
             </thead>
             <tbody>
               {filtered.map((a) => {
-                const Icon = a.icon;
+                const Icon = getIconForCategory(a.categoria);
                 return (
                   <tr key={a.id} className="border-t">
                     <td className="px-5 py-4">
@@ -446,7 +645,7 @@ function InventarioPage() {
         {/* Mobile Cards */}
         <div className="block md:hidden divide-y">
           {filtered.map((a) => {
-            const Icon = a.icon;
+            const Icon = getIconForCategory(a.categoria);
             return (
               <div key={a.id} className="p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
@@ -552,7 +751,10 @@ function InventarioPage() {
 
               <div className="mt-5 flex items-center gap-3 rounded-xl border bg-muted/30 p-4">
                 <div className="grid h-12 w-12 place-items-center rounded-lg bg-muted text-muted-foreground">
-                  <viewAtivo.icon className="h-6 w-6" />
+                  {(() => {
+                    const ViewIcon = getIconForCategory(viewAtivo.categoria);
+                    return <ViewIcon className="h-6 w-6" />;
+                  })()}
                 </div>
                 <div className="min-w-0">
                   <div className="font-semibold">{viewAtivo.nome}</div>
@@ -584,6 +786,31 @@ function InventarioPage() {
                 <p className="mt-1.5 rounded-lg border bg-muted/30 p-3 text-sm text-foreground">
                   {viewAtivo.observacoes}
                 </p>
+              </div>
+
+              {/* Linha do Tempo / Histórico do Ativo */}
+              <div className="mt-6 border-t pt-5">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                  Histórico / Linha do Tempo
+                </div>
+                {historicoLogs.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Nenhum registro de auditoria encontrado para este ativo.</p>
+                ) : (
+                  <div className="space-y-3.5 pl-1.5 relative border-l border-zinc-200 dark:border-zinc-800 ml-1">
+                    {historicoLogs.map((log) => (
+                      <div key={log.id} className="relative pl-4 text-xs">
+                        <div className="absolute -left-[7px] top-1.5 h-2 w-2 rounded-full bg-zinc-400 dark:bg-zinc-600" />
+                        <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground font-medium mb-0.5">
+                          <span>{new Date(log.created).toLocaleString("pt-BR").slice(0, 16)}</span>
+                          <span className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${getActionBadgeClass(log.acao)}`}>
+                            {log.acao}
+                          </span>
+                        </div>
+                        <p className="text-foreground/90 font-medium leading-relaxed">{log.descricao}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex gap-2">
@@ -682,7 +909,7 @@ function InventarioPage() {
                 className="w-full rounded-lg border bg-background px-3.5 py-2.5 text-sm focus:border-info focus:outline-none"
               >
                 <option value="">Todas as Categorias</option>
-                {categorias.map((c) => (
+                {categoriasDb.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>

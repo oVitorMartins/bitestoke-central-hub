@@ -21,7 +21,27 @@ export type Ativo = {
   observacoes: string;
 };
 
-export const categorias = ["Notebook", "Monitor", "Rede", "Periféricos"] as const;
+export type CategoriaObjeto = {
+  id: string;
+  nome: string;
+};
+
+export const CATEGORIAS_PADRAO: CategoriaObjeto[] = [
+  { id: "cat_desktop", nome: "Desktop" },
+  { id: "cat_notebook", nome: "Notebook" },
+  { id: "cat_monitor", nome: "Monitor" },
+  { id: "cat_impressora", nome: "Impressora" },
+  { id: "cat_tablet", nome: "Tablet" },
+  { id: "cat_servidor", nome: "Servidor" },
+  { id: "cat_rede", nome: "Rede" },
+  { id: "cat_nobreak", nome: "No-break" },
+  { id: "cat_leitor", nome: "Leitor" },
+  { id: "cat_televisao", nome: "Televisão" },
+  { id: "cat_camera", nome: "Câmera" },
+  { id: "cat_telefone", nome: "Telefone" },
+];
+
+export const categorias = CATEGORIAS_PADRAO.map((c) => c.nome);
 export const statusList: Status[] = ["Estoque", "Em Uso", "Em Manutenção", "Descarte"];
 export const setores = ["TI", "RH", "TI - Almoxarifado", "Operações"] as const;
 

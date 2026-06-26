@@ -40,20 +40,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background p-0 md:p-4 flex flex-col justify-center">
-        <div className="mx-auto flex w-full max-w-[1400px] min-h-screen md:min-h-[calc(100vh-2rem)] gap-0 overflow-hidden rounded-none md:rounded-3xl border-0 md:border-2 border-violet/30 bg-background shadow-none md:shadow-sm">
+        <div className="mx-auto flex w-full max-w-[1400px] min-h-screen md:min-h-[calc(100vh-2rem)] gap-0 overflow-hidden rounded-none md:rounded-3xl border-0 md:border-2 border-border bg-background shadow-none md:shadow-sm">
           {/* Sidebar */}
-          <aside className="hidden md:flex w-64 min-w-[16rem] shrink-0 flex-col justify-between border-r bg-sidebar p-5">
+          <aside className="hidden md:flex w-64 min-w-[16rem] shrink-0 flex-col justify-between bg-sidebar p-5 relative z-10 shadow-xl shadow-zinc-200/50 dark:shadow-black/20">
             <div>
-              <div className="mb-8 flex items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary text-primary-foreground">
-                  <Package className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="truncate font-bold text-foreground">BitEstoque</h1>
-                  <p className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
-                    HMS
-                  </p>
-                </div>
+              <div className="mb-8 flex items-center">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-zinc-900 via-zinc-700 to-zinc-500 dark:from-white dark:via-zinc-100 dark:to-zinc-400 bg-clip-text text-transparent tracking-tight">
+                  BitEstoque
+                </h1>
               </div>
               <nav className="space-y-1">
                 {navItems.map((item) => {

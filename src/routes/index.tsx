@@ -5,6 +5,7 @@ import { auditoria, ativos } from "@/lib/ativos";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { toast } from "sonner";
+import { pb } from "@/lib/pocketbase";
 import {
   Dialog,
   DialogContent,
@@ -38,9 +39,48 @@ const categorias = [
   { nome: "Outros", pct: 15, barColor: "bg-zinc-300 dark:bg-zinc-600" },
 ];
 
+function getActionBadgeClass(action: string) {
+  const a = (action || "").trim().toLowerCase();
+  switch (a) {
+    case "cadastro":
+      return "bg-green-50 text-green-700 border border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900/50";
+    case "movimentação":
+    case "movimentacao":
+      return "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50";
+    case "alteração de status":
+    case "alteracao de status":
+      return "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50";
+    case "edição":
+    case "edicao":
+      return "bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-900/50";
+    case "descarte de ativo":
+    case "descarte":
+      return "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50";
+    default:
+      return "bg-zinc-50 text-zinc-700 border border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800";
+  }
+}
+
 function Dashboard() {
   const navigate = useNavigate();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [logs, setLogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchLogs() {
+      try {
+        const records = await pb.collection("auditoria").getFullList({
+          sort: "-created",
+          expand: "usuario,ativo_vinculado",
+          $autoCancel: false,
+        });
+        setLogs(records);
+      } catch (err) {
+        console.error("Failed to fetch logs for dashboard", err);
+      }
+    }
+    fetchLogs();
+  }, []);
 
   const handleScanSuccess = useCallback(
     (decodedText: string) => {
@@ -164,40 +204,62 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {auditoria.slice(0, 5).map((a, i) => (
-                  <tr key={i} className="border-t">
-                    <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">
-                      {a.data}
-                    </td>
-                    <td className="py-3.5 pr-4 font-medium text-foreground">{a.responsavel}</td>
-                    <td className="py-3.5 pr-4 font-mono text-xs">{a.ativo}</td>
-                    <td className="py-3.5 text-muted-foreground">{a.movimentacao}</td>
-                  </tr>
-                ))}
+                {logs.slice(0, 5).map((log, i) => {
+                  const asset = log.expand?.ativo_vinculado;
+                  const user = log.expand?.usuario;
+                  return (
+                    <tr key={i} className="border-t">
+                      <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">
+                        {new Date(log.created).toLocaleString("pt-BR").slice(0, 16)}
+                      </td>
+                      <td className="py-3.5 pr-4 font-medium text-foreground">{user?.nome || "Sistema / Admin"}</td>
+                      <td className="py-3.5 pr-4 font-mono text-xs">{asset ? `${asset.nome} (${asset.codigo_patrimonio})` : "Ativo Excluído"}</td>
+                      <td className="py-3.5 text-muted-foreground">
+                        <span className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-bold mr-2 uppercase ${getActionBadgeClass(log.acao)}`}>
+                          {log.acao}
+                        </span>
+                        {log.descricao}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
           {/* Mobile View */}
           <div className="block md:hidden space-y-3">
-            {auditoria.slice(0, 5).map((a, i) => (
-              <div key={i} className="rounded-xl border bg-card p-4 space-y-2 text-sm">
-                <div className="flex items-center justify-between border-b pb-2">
-                  <span className="font-mono text-xs font-semibold text-foreground">{a.ativo}</span>
-                  <span className="text-xs text-muted-foreground">{a.data}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                  <div>
-                    <span className="text-muted-foreground block font-medium">Responsável:</span>
-                    <span className="text-foreground font-semibold">{a.responsavel}</span>
+            {logs.slice(0, 5).map((log, i) => {
+              const asset = log.expand?.ativo_vinculado;
+              const user = log.expand?.usuario;
+              return (
+                <div key={i} className="rounded-xl border bg-card p-4 space-y-2 text-sm">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <span className="font-mono text-xs font-semibold text-foreground">
+                      {asset ? `${asset.nome} (${asset.codigo_patrimonio})` : "Ativo Excluído"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(log.created).toLocaleString("pt-BR").slice(0, 16)}
+                    </span>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground block font-medium">Movimentação:</span>
-                    <span className="text-foreground">{a.movimentacao}</span>
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                    <div>
+                      <span className="text-muted-foreground block font-medium">Responsável:</span>
+                      <span className="text-foreground font-semibold">{user?.nome || "Sistema / Admin"}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block font-medium">Movimentação:</span>
+                      <span className="text-foreground">
+                        <span className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold mr-1.5 uppercase ${getActionBadgeClass(log.acao)}`}>
+                          {log.acao}
+                        </span>
+                        {log.descricao}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

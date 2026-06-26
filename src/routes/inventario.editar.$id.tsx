@@ -1,16 +1,47 @@
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { Info, ShoppingCart, AlignLeft, Tag, Camera, QrCode, ChevronDown, X } from "lucide-react";
-import { useState, useRef, type FormEvent, type ChangeEvent } from "react";
+import { useState, useRef, useEffect, type FormEvent, type ChangeEvent } from "react";
+import { getAtivo, CATEGORIAS_PADRAO } from "@/lib/ativos";
+import { pb, createAuditLog } from "@/lib/pocketbase";
 import { toast } from "sonner";
-import { getAtivo } from "@/lib/ativos";
 
 export const Route = createFileRoute("/inventario/editar/$id")({
-  loader: ({ params }) => {
-    const ativo = getAtivo(params.id);
-    if (!ativo) throw notFound();
-    const { icon, ...serializableAtivo } = ativo;
-    return { ativo: serializableAtivo };
+  loader: async ({ params }) => {
+    try {
+      const record = await pb.collection("ativos").getOne(params.id, {
+        expand: "categoria",
+        $autoCancel: false,
+      });
+
+      const displayStatus = (record.status === "Em Estoque" || record.status === "Estoque") ? "Estoque" : record.status;
+      const categoryName = record.expand?.categoria?.nome || record.categoria_nome || "";
+
+      const mappedAtivo = {
+        id: record.id,
+        nome: record.nome || "",
+        specs: record.marca_modelo || record.observacoes || "",
+        marcaModelo: record.marca_modelo || "",
+        categoria: categoryName,
+        patrimonio: record.codigo_patrimonio || "",
+        serie: record.numero_serie || "",
+        status: displayStatus,
+        localizacao: record.localizacao || "TI",
+        dataAquisicao: record.data_aquisicao ? new Date(record.data_aquisicao).toLocaleDateString("pt-BR") : "",
+        valor: record.valor ? record.valor.toString() : "",
+        notaFiscal: record.nota_fiscal || "",
+        criticidade: record.criticidade || "Baixa",
+        observacoes: record.observacoes || "",
+      };
+
+      return { ativo: mappedAtivo };
+    } catch (err) {
+      console.error("Failed to load asset from PocketBase for editing", err);
+      const fallback = getAtivo(params.id);
+      if (!fallback) throw notFound();
+      const { icon, ...serializableAtivo } = fallback;
+      return { ativo: serializableAtivo };
+    }
   },
   component: EditarAtivoPage,
 });
@@ -127,6 +158,20 @@ function EditarAtivoPage() {
   const [patrimonio, setPatrimonio] = useState(ativo.patrimonio);
   const [status, setStatus] = useState<Status | "">(mapStatus(ativo.status));
   const [categoria, setCategoria] = useState(ativo.categoria);
+  const [categoriasDb, setCategoriasDb] = useState<{ id: string; nome: string }[]>([]);
+
+  useEffect(() => {
+    async function fetchCategorias() {
+      try {
+        const records = await pb.collection("categorias").getFullList({ $autoCancel: false });
+        setCategoriasDb(records.map((r) => ({ id: r.id, nome: r.nome })));
+      } catch (err) {
+        console.error("Failed to fetch categories from PocketBase", err);
+        setCategoriasDb(CATEGORIAS_PADRAO.map((c) => ({ id: c.id, nome: c.nome })));
+      }
+    }
+    fetchCategorias();
+  }, []);
   const [localizacao, setLocalizacao] = useState(ativo.localizacao);
   const [criticidade, setCriticidade] = useState<string>(ativo.criticidade);
   const [alugado, setAlugado] = useState(false);
@@ -136,6 +181,11 @@ function EditarAtivoPage() {
   const [foto, setFoto] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [marcaModelo, setMarcaModelo] = useState(ativo.marcaModelo || "");
+  const [serie, setSerie] = useState(ativo.serie || "");
+  const [notaFiscal, setNotaFiscal] = useState(ativo.notaFiscal || "");
+  const [observacoes, setObservacoes] = useState(ativo.observacoes || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fornecedores = [
     "Locaweb Corp",
@@ -160,8 +210,10 @@ function EditarAtivoPage() {
     reader.readAsDataURL(file);
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const newErrors: Record<string, string> = {};
     if (!nome.trim()) newErrors.nome = "Informe o nome do ativo.";
     if (!patrimonio.trim()) newErrors.patrimonio = "Informe o código de patrimônio.";
@@ -177,26 +229,71 @@ function EditarAtivoPage() {
       return;
     }
     setErrors({});
+    setIsSubmitting(true);
 
-    const fd = new FormData(e.currentTarget);
-    const entries = Object.fromEntries(fd.entries()) as Record<string, string>;
-    const payload = {
-      ...entries,
-      nome,
-      patrimonio,
-      status,
-      categoria,
-      localizacao,
-      criticidade,
-      alugado,
-      fornecedor: alugado ? fornecedor : null,
-      valor: valorCents / 100,
-      dataAquisicao,
-    };
+    try {
+      const categoryObj = categoriasDb.find((c) => c.nome === categoria);
+      const categoriaId = categoryObj ? categoryObj.id : "";
 
-    console.log("Ativo atualizado (mock):", payload);
-    toast.success("Ativo atualizado com sucesso!", { description: nome });
-    navigate({ to: "/inventario" });
+      const data = {
+        nome,
+        codigo_patrimonio: patrimonio,
+        status: status === "Estoque" ? "Em Estoque" : status,
+        categoria: categoriaId || null,
+        categoria_nome: categoria,
+        marca_modelo: marcaModelo,
+        numero_serie: serie,
+        data_aquisicao: dataAquisicao ? new Date(dataAquisicao).toISOString() : null,
+        valor: valorCents / 100,
+        nota_fiscal: notaFiscal,
+        criticidade,
+        alugado,
+        fornecedor: alugado ? fornecedor : null,
+        observacoes: observacoes,
+      };
+
+      await pb.collection("ativos").update(ativo.id, data, { $autoCancel: false });
+
+      // Create logs based on event mapping
+      const mappedNewStatus = status === "Estoque" ? "Em Estoque" : status;
+      const mappedOldStatus = ativo.status === "Estoque" ? "Em Estoque" : ativo.status;
+
+      // 1. Mudança de Setor / Localidade
+      if (ativo.localizacao !== localizacao) {
+        await createAuditLog(ativo.id, "Movimentação", `Ativo transferido para o setor ${localizacao}.`);
+      }
+
+      // 2. Mudança de Status Geral
+      if (mappedOldStatus !== mappedNewStatus) {
+        await createAuditLog(ativo.id, "Alteração de Status", `Status alterado de ${mappedOldStatus} para ${mappedNewStatus}.`);
+      }
+
+      // 3. Mudança de Características
+      const characteristicsChanges: string[] = [];
+      if (ativo.nome !== nome) {
+        characteristicsChanges.push(`Nome "${ativo.nome}" foi alterado para "${nome}"`);
+      }
+      if (ativo.categoria !== categoria) {
+        characteristicsChanges.push(`Categoria "${ativo.categoria}" foi alterada para "${categoria}"`);
+      }
+      if (ativo.patrimonio !== patrimonio) {
+        characteristicsChanges.push(`Patrimônio "${ativo.patrimonio}" foi alterado para "${patrimonio}"`);
+      }
+
+      if (characteristicsChanges.length > 0) {
+        await createAuditLog(ativo.id, "Edição", characteristicsChanges.join(", ") + ".");
+      }
+
+      toast.success("Ativo atualizado com sucesso!", { description: nome });
+      navigate({ to: "/inventario" });
+    } catch (err) {
+      console.error("Failed to update asset in PocketBase", err);
+      toast.error("Erro ao atualizar ativo no banco de dados.", {
+        description: err instanceof Error ? err.message : "Erro desconhecido",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -231,14 +328,16 @@ function EditarAtivoPage() {
                   <Field label="Marca / Modelo">
                     <input
                       name="marcaModelo"
-                      defaultValue={ativo.marcaModelo}
+                      value={marcaModelo}
+                      onChange={(e) => setMarcaModelo(e.target.value)}
                       className={`${inputCls} font-mono`}
                     />
                   </Field>
                   <Field label="Número de Série (S/N)">
                     <input
                       name="serie"
-                      defaultValue={ativo.serie}
+                      value={serie}
+                      onChange={(e) => setSerie(e.target.value)}
                       className={`${inputCls} font-mono`}
                     />
                   </Field>
@@ -286,7 +385,8 @@ function EditarAtivoPage() {
                 <Field label="Número da Nota Fiscal / Contrato">
                   <input
                     name="notaFiscal"
-                    defaultValue={ativo.notaFiscal}
+                    value={notaFiscal}
+                    onChange={(e) => setNotaFiscal(e.target.value)}
                     className={inputCls}
                     placeholder={
                       alugado ? "Ex: Número do Contrato de Locação" : "Ex: NF-123456 / CTR-2024-01"
@@ -315,7 +415,8 @@ function EditarAtivoPage() {
             <Card icon={AlignLeft} title="Observações">
               <textarea
                 name="observacoes"
-                defaultValue={ativo.observacoes}
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
                 rows={5}
                 className={`${inputCls} resize-y`}
               />
@@ -374,7 +475,7 @@ function EditarAtivoPage() {
                     value={categoria}
                     onChange={setCategoria}
                     hasError={!!errors.categoria}
-                    options={["Notebook", "Monitor", "Rede", "Periféricos", "Mobiliário", "Outros"]}
+                    options={categoriasDb.map((c) => c.nome)}
                   />
                 </Field>
                 <Field label="Localização" required error={errors.localizacao}>
@@ -439,9 +540,10 @@ function EditarAtivoPage() {
             </Link>
             <button
               type="submit"
-              className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-semibold text-background hover:opacity-90"
+              disabled={isSubmitting}
+              className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50 cursor-pointer"
             >
-              Salvar Alterações
+              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
             </button>
           </div>
         </div>
