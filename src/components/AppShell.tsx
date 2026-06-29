@@ -58,10 +58,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Sidebar */}
           <aside className="hidden md:flex w-64 min-w-[16rem] shrink-0 flex-col justify-between bg-sidebar p-5 relative z-10 shadow-xl shadow-zinc-200/50 dark:shadow-black/20">
             <div>
-              <div className="mb-8 flex items-center">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-zinc-900 via-zinc-700 to-zinc-500 dark:from-white dark:via-zinc-100 dark:to-zinc-400 bg-clip-text text-transparent tracking-tight">
+              <div className="mb-6 flex items-center gap-2.5 pb-4">
+                <img
+                  src="/logo_bit_estoque_preto-removebg-preview.png"
+                  alt="BitEstoque Logo"
+                  className="h-10 w-10 object-contain"
+                />
+                <span className="text-xl font-bold bg-gradient-to-r from-zinc-900 via-zinc-700 to-zinc-500 dark:from-white dark:via-zinc-100 dark:to-zinc-400 bg-clip-text text-transparent tracking-tight">
                   BitEstoque
-                </h1>
+                </span>
               </div>
               <nav className="space-y-1">
                 {filteredNavItems.map((item) => {
@@ -71,11 +76,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <Link
                       key={item.label}
                       to={item.to}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                        active
-                          ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50 font-semibold"
-                          : "text-sidebar-foreground hover:bg-muted"
-                      }`}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${active
+                        ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50 font-semibold"
+                        : "text-sidebar-foreground hover:bg-muted"
+                        }`}
                     >
                       <Icon className="h-4 w-4" />
                       {item.label}
@@ -132,11 +136,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.label}
                   to={item.to}
-                  className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 text-[10px] font-medium transition-colors ${
-                    active
-                      ? "text-zinc-950 dark:text-zinc-50 font-semibold"
-                      : "text-sidebar-foreground hover:text-foreground"
-                  }`}
+                  className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 text-[10px] font-medium transition-colors ${active
+                    ? "text-zinc-950 dark:text-zinc-50 font-semibold"
+                    : "text-sidebar-foreground hover:text-foreground"
+                    }`}
                 >
                   <Icon className="h-5 w-5" />
                   <span>{item.label}</span>

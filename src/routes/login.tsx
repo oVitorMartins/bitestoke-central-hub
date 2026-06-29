@@ -54,10 +54,15 @@ function LoginPage() {
       {/* Lado Esquerdo - Institucional (Visível apenas em telas médias e grandes) */}
       <div className="hidden md:flex md:w-1/2 bg-zinc-900 dark:bg-zinc-950 p-12 flex-col justify-between text-white relative">
         <div className="absolute inset-0 bg-radial from-zinc-800 to-transparent opacity-30 pointer-events-none" />
-        <div className="flex items-center relative z-10">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent tracking-tight">
+        <div className="flex items-center gap-2.5 relative z-10 pb-4">
+          <img
+            src="/logo_bit_estoque_branco-removebg-preview.png"
+            alt="BitEstoque Logo"
+            className="h-10 w-10 object-contain"
+          />
+          <span className="text-xl font-bold text-white tracking-tight">
             BitEstoque
-          </h1>
+          </span>
         </div>
 
         <div className="space-y-4 relative z-10 max-w-md">
