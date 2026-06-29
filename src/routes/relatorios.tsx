@@ -104,8 +104,8 @@ function RelatoriosPage() {
 
       return {
         id: log.id,
-        data: new Date(log.created).toLocaleString("pt-BR").slice(0, 16),
-        responsavel: user?.nome || "Sistema / Admin",
+        data: new Date(log.created).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+        responsavel: log.responsavel || user?.name || user?.nome || "Sistema / Admin",
         ativo: asset ? `${asset.nome} (${asset.codigo_patrimonio})` : "Ativo Excluído",
         movimentacao: log.descricao || "",
         acao: log.acao || "Movimentação",
@@ -239,7 +239,7 @@ function RelatoriosPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <th className="pb-3 text-left">Data</th>
+                <th className="pb-3 text-left min-w-[140px] whitespace-nowrap">Data</th>
                 <th className="pb-3 text-left">Responsável pela Movimentação</th>
                 <th className="pb-3 text-left">Ativo Afetado</th>
                 <th className="pb-3 text-left">Movimentação</th>
@@ -248,7 +248,7 @@ function RelatoriosPage() {
             <tbody>
               {filteredAuditoria.map((a, i) => (
                 <tr key={i} className="border-t">
-                  <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">{a.data}</td>
+                  <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap min-w-[140px]">{a.data}</td>
                   <td className="py-3.5 pr-4 font-medium text-foreground">{a.responsavel}</td>
                   <td className="py-3.5 pr-4 font-mono text-xs">{a.ativo}</td>
                   <td className="py-3.5 text-muted-foreground">

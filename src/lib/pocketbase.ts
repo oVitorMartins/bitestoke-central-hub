@@ -5,8 +5,10 @@ export const pb = new PocketBase("http://100.9.8.103");
 export async function createAuditLog(ativoId: string, acao: string, descricao: string) {
   try {
     const currentUserId = pb.authStore.model?.id || null;
+    const currentUserName = pb.authStore.model?.name || null;
     await pb.collection("auditoria").create({
       ...(currentUserId ? { usuario: currentUserId } : {}),
+      responsavel: currentUserName,
       acao,
       descricao,
       ativo_vinculado: ativoId,

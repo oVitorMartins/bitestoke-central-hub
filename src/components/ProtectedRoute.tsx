@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { pb } from "@/lib/pocketbase";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -10,18 +11,25 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const user = localStorage.getItem("bitestoque_user");
-    if (!user) {
-      setIsAuthenticated(false);
-      // Save current pathname to session storage so we can redirect back after login
-      const currentPath = window.location.pathname;
-      if (currentPath && currentPath !== "/login") {
-        sessionStorage.setItem("auth_redirect", currentPath);
+    const checkAuth = () => {
+      if (!pb.authStore.isValid) {
+        setIsAuthenticated(false);
+        // Save current pathname to session storage so we can redirect back after login
+        const currentPath = window.location.pathname;
+        if (currentPath && currentPath !== "/login") {
+          sessionStorage.setItem("auth_redirect", currentPath);
+        }
+        navigate({ to: "/login" });
+      } else {
+        setIsAuthenticated(true);
       }
-      navigate({ to: "/login" });
-    } else {
-      setIsAuthenticated(true);
-    }
+    };
+
+    checkAuth();
+
+    return pb.authStore.onChange(() => {
+      checkAuth();
+    });
   }, [navigate]);
 
   if (isAuthenticated === null) {

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
-import { Key, Plus, Search, X, ChevronLeft, ChevronRight, Download, Pencil, Trash2 } from "lucide-react";
+import { Key, Plus, Search, X, ChevronLeft, ChevronRight, Download, Pencil, Trash2, Monitor } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { toast } from "sonner";
 import { pb } from "@/lib/pocketbase";
@@ -78,7 +78,27 @@ function LicencasPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [licenceToDelete, setLicenceToDelete] = useState<Licenca | null>(null);
 
+  const [model, setModel] = useState(pb.authStore.model);
+
+  useEffect(() => {
+    setModel(pb.authStore.model);
+    return pb.authStore.onChange((token, m) => {
+      setModel(m);
+    });
+  }, []);
+
+  const getPerfilValue = (m: any): string => {
+    if (!m?.perfil) return "";
+    if (Array.isArray(m.perfil)) {
+      return m.perfil[0] || "";
+    }
+    return m.perfil;
+  };
+
+  const isTecnico = getPerfilValue(model) === "Técnico";
+
   const handleOpenEdit = (l: Licenca) => {
+    if (isTecnico) return;
     setEditLicenceId(l.id);
     setEditLicenceSoftware(l.nome_software);
     setEditLicenceChavesCompradas(l.chaves_compradas);
@@ -117,6 +137,7 @@ function LicencasPage() {
   };
 
   const handleOpenDelete = (l: Licenca) => {
+    if (isTecnico) return;
     setLicenceToDelete(l);
     setIsDeleteOpen(true);
   };
@@ -155,16 +176,7 @@ function LicencasPage() {
     fetchLicencas();
   }, []);
 
-  useEffect(() => {
-    const stored = localStorage.getItem("bitestoque_user");
-    if (stored) {
-      try {
-        setCurrentUser(JSON.parse(stored));
-      } catch (err) {
-        console.error("Failed to parse user session", err);
-      }
-    }
-  }, []);
+
 
   const handleAddLicence = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -249,185 +261,151 @@ function LicencasPage() {
 
   return (
     <AppShell>
-      {/* Header */}
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-lg bg-muted">
-            <Key className="h-5 w-5 text-foreground" />
+      {/* Desktop view (visible from md and up) */}
+      <div className="hidden md:block">
+        {/* Header */}
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-lg bg-muted">
+              <Key className="h-5 w-5 text-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">Licenças de Software</h1>
+              <p className="text-xs text-muted-foreground">
+                Gerencie chaves compradas, assinaturas SaaS e expiração das licenças.
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">Licenças de Software</h1>
-            <p className="text-xs text-muted-foreground">
-              Gerencie chaves compradas, assinaturas SaaS e expiração das licenças.
-            </p>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={handleExportCsv}
+              className="inline-flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted cursor-pointer"
+            >
+              <Download className="h-4 w-4" /> Exportar
+            </button>
+            {!isTecnico && (
+              <button
+                onClick={() => setIsNewLicenceOpen(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-foreground text-background px-4 py-2.5 text-sm font-semibold hover:opacity-90 cursor-pointer"
+              >
+                <Plus className="h-4 w-4" /> Novo Software
+              </button>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={handleExportCsv}
-            className="inline-flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted cursor-pointer"
-          >
-            <Download className="h-4 w-4" /> Exportar
-          </button>
-          <button
-            onClick={() => setIsNewLicenceOpen(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-foreground text-background px-4 py-2.5 text-sm font-semibold hover:opacity-90 cursor-pointer"
-          >
-            <Plus className="h-4 w-4" /> Novo Software
-          </button>
+
+        {/* Search Filter */}
+        <div className="mb-5 relative">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Pesquisar por nome do software..."
+            className="w-full rounded-xl border bg-card pl-10 pr-4 py-3 text-sm placeholder:text-muted-foreground/75 focus:outline-none focus:border-zinc-400"
+          />
         </div>
-      </div>
 
-      {/* Search Filter */}
-      <div className="mb-5 relative">
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar por nome do software..."
-          className="w-full rounded-2xl border bg-card py-2.5 pl-10 pr-4 text-sm placeholder:text-muted-foreground/70 focus:border-info focus:outline-none"
-        />
-      </div>
-
-      {/* Content Table */}
-      <section className="rounded-2xl border bg-card">
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/40 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                <th className="px-5 py-4 text-left">Nome do Software</th>
-                <th className="px-3 py-4 text-left">Chaves Compradas</th>
-                <th className="px-3 py-4 text-left">Chaves em Uso</th>
-                <th className="px-3 py-4 text-left">Valor da Assinatura</th>
-                <th className="px-3 py-4 text-left">Data de Expiração</th>
-                <th className="px-3 py-4 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr className="border-t">
-                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
-                    Carregando licenças...
-                  </td>
+        {/* Table & Pagination Box */}
+        <section className="rounded-2xl border bg-card">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/40 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <th className="px-5 py-4 text-left">Nome do Software</th>
+                  <th className="px-3 py-4 text-left">Chaves Compradas</th>
+                  <th className="px-3 py-4 text-left">Chaves em Uso</th>
+                  <th className="px-3 py-4 text-left">Valor da Assinatura</th>
+                  <th className="px-3 py-4 text-left">Data de Expiração</th>
+                  {!isTecnico && <th className="px-3 py-4 text-right">Ações</th>}
                 </tr>
-              ) : filtered.length === 0 ? (
-                <tr className="border-t">
-                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
-                    Nenhuma licença encontrada.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((l) => (
-                  <tr key={l.id} className="border-t">
-                    <td className="px-5 py-4 font-semibold text-foreground">{l.nome_software}</td>
-                    <td className="px-3 py-4 text-muted-foreground">{l.chaves_compradas}</td>
-                    <td className="px-3 py-4 text-muted-foreground">{l.chaves_em_uso}</td>
-                    <td className="px-3 py-4 text-muted-foreground">
-                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                        l.preco || 0,
-                      )}
-                    </td>
-                    <td className="px-3 py-4 text-muted-foreground">
-                      {l.data_expiracao ? l.data_expiracao.slice(0, 10) : "N/A"}
-                    </td>
-                    <td className="px-3 py-4 text-right">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          onClick={() => handleOpenEdit(l)}
-                          className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
-                          aria-label="Editar"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenDelete(l)}
-                          className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-red-700 cursor-pointer"
-                          aria-label="Excluir"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr className="border-t">
+                    <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                      Carregando licenças...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile View for Licenses */}
-        <div className="block md:hidden divide-y">
-          {loading ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              Carregando licenças...
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              Nenhuma licença encontrada.
-            </div>
-          ) : (
-            filtered.map((l) => (
-              <div key={l.id} className="p-4 space-y-2">
-                <div className="font-semibold text-foreground text-sm">{l.nome_software}</div>
-                <div className="grid grid-cols-2 gap-2 text-xs pt-1 text-muted-foreground">
-                  <div>
-                    <span className="block font-medium">Chaves:</span>
-                    <span className="text-foreground">
-                      {l.chaves_em_uso} / {l.chaves_compradas}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block font-medium">Valor:</span>
-                    <span className="text-foreground">
-                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                        l.preco || 0,
+                ) : filtered.length === 0 ? (
+                  <tr className="border-t">
+                    <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                      Nenhuma licença encontrada.
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((l) => (
+                    <tr key={l.id} className="border-t">
+                      <td className="px-5 py-4 font-semibold text-foreground">{l.nome_software}</td>
+                      <td className="px-3 py-4 text-muted-foreground">{l.chaves_compradas}</td>
+                      <td className="px-3 py-4 text-muted-foreground">{l.chaves_em_uso}</td>
+                      <td className="px-3 py-4 text-muted-foreground">
+                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                          l.preco || 0,
+                        )}
+                      </td>
+                      <td className="px-3 py-4 text-muted-foreground">
+                        {l.data_expiracao ? l.data_expiracao.slice(0, 10) : "N/A"}
+                      </td>
+                      {!isTecnico && (
+                        <td className="px-3 py-4 text-right">
+                          <div className="flex justify-end gap-1">
+                            <button
+                              onClick={() => handleOpenEdit(l)}
+                              className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                              aria-label="Editar"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleOpenDelete(l)}
+                              className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-red-700 cursor-pointer"
+                              aria-label="Excluir"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
                       )}
-                    </span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="block font-medium">Data de Expiração:</span>
-                    <span className="text-foreground">
-                      {l.data_expiracao ? l.data_expiracao.slice(0, 10) : "N/A"}
-                    </span>
-                  </div>
-                  <div className="col-span-2 flex justify-end gap-2 pt-2 border-t mt-1">
-                    <button
-                      onClick={() => handleOpenEdit(l)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
-                    >
-                      <Pencil className="h-3.5 w-3.5" /> Editar
-                    </button>
-                    <button
-                      onClick={() => handleOpenDelete(l)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border text-xs font-medium text-red-600 hover:bg-red-50 cursor-pointer"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> Excluir
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Pagination */}
-        <div className="flex items-center justify-between border-t px-5 py-3.5">
-          <span className="text-xs text-muted-foreground">
-            Mostrando {filtered.length} de {licencas.length} licenças
-          </span>
-          <div className="flex items-center gap-1">
-            <button className="grid h-8 w-8 place-items-center rounded-md border text-muted-foreground hover:bg-muted cursor-pointer">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button className="grid h-8 w-8 place-items-center rounded-md bg-foreground text-xs font-semibold text-background">
-              1
-            </button>
-            <button className="grid h-8 w-8 place-items-center rounded-md border text-muted-foreground hover:bg-muted cursor-pointer">
-              <ChevronRight className="h-4 w-4" />
-            </button>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between border-t px-5 py-3.5">
+            <span className="text-xs text-muted-foreground">
+              Mostrando {filtered.length} de {licencas.length} licenças
+            </span>
+            <div className="flex items-center gap-1">
+              <button className="grid h-8 w-8 place-items-center rounded-md border text-muted-foreground hover:bg-muted cursor-pointer">
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button className="grid h-8 w-8 place-items-center rounded-md bg-foreground text-xs font-semibold text-background">
+                1
+              </button>
+              <button className="grid h-8 w-8 place-items-center rounded-md border text-muted-foreground hover:bg-muted cursor-pointer">
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* Mobile restriction message (visible on screens smaller than md) */}
+      <div className="flex md:hidden flex-col items-center justify-center text-center p-8 border bg-card rounded-2xl min-h-[350px] space-y-4">
+        <div className="grid h-16 w-16 place-items-center rounded-full bg-muted text-muted-foreground">
+          <Monitor className="h-8 w-8" />
         </div>
-      </section>
+        <div className="space-y-2 max-w-sm">
+          <h2 className="text-lg font-bold text-foreground">Acesso Restrito ao Desktop</h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Por motivos de segurança e usabilidade, a aba de Licenças está disponível apenas
+            para computadores. Por favor, acesse através de um desktop.
+          </p>
+        </div>
+      </div>
 
       {/* Cadastrar Licença Dialog */}
       <Dialog open={isNewLicenceOpen} onOpenChange={setIsNewLicenceOpen}>

@@ -3,6 +3,7 @@ import { LayoutDashboard, Package, FileBarChart, Settings, LogOut, User, Key } f
 import { type ReactNode, useState, useEffect } from "react";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { pb } from "@/lib/pocketbase";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/" },
@@ -15,27 +16,40 @@ const navItems = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const [user, setUser] = useState<{ nome: string; perfil: string } | null>(null);
+
+  const [model, setModel] = useState(pb.authStore.model);
 
   useEffect(() => {
-    const stored = localStorage.getItem("bitestoque_user");
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch (err) {
-        console.error("Failed to parse user session", err);
-      }
-    }
+    setModel(pb.authStore.model);
+    return pb.authStore.onChange((token, m) => {
+      setModel(m);
+    });
   }, []);
+
+  const getPerfilValue = (m: any): string => {
+    if (!m?.perfil) return "";
+    if (Array.isArray(m.perfil)) {
+      return m.perfil[0] || "";
+    }
+    return m.perfil;
+  };
+
+  const perfil = getPerfilValue(model);
+  const isTecnico = perfil === "Técnico";
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (isTecnico && item.to === "/configuracoes") return false;
+    return true;
+  });
 
   const handleLogout = (e: React.MouseEvent) => {
     e.preventDefault();
-    localStorage.removeItem("bitestoque_user");
+    pb.authStore.clear();
     navigate({ to: "/login" });
   };
 
-  const nomeExibido = user?.nome || "Vitor Santos";
-  const cargoExibido = user?.perfil || "Administrador";
+  const nomeExibido = model?.name || model?.nome || model?.email || "Vitor Santos";
+  const cargoExibido = perfil || "Administrador";
 
   return (
     <ProtectedRoute>
@@ -50,7 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </h1>
               </div>
               <nav className="space-y-1">
-                {navItems.map((item) => {
+                {filteredNavItems.map((item) => {
                   const Icon = item.icon;
                   const active = pathname === item.to;
                   return (
@@ -111,7 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           {/* Bottom Nav Bar (Mobile only) */}
           <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t bg-sidebar flex items-center justify-around z-40 px-2 shadow-lg">
-            {navItems.map((item) => {
+            {filteredNavItems.map((item) => {
               const Icon = item.icon;
               const active = pathname === item.to;
               return (
@@ -129,6 +143,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </Link>
               );
             })}
+            <button
+              onClick={handleLogout}
+              className="flex flex-col items-center justify-center gap-1 flex-1 py-1 text-[10px] font-medium transition-colors text-sidebar-foreground hover:text-foreground cursor-pointer"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Sair</span>
+            </button>
           </div>
         </div>
       </div>

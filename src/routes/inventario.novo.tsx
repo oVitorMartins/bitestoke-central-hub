@@ -205,6 +205,7 @@ function NovoAtivoPage() {
     const newErrors: Record<string, string> = {};
     if (!nome.trim()) newErrors.nome = "Informe o nome do ativo.";
     if (!patrimonio.trim()) newErrors.patrimonio = "Informe o código de patrimônio.";
+    if (!serie.trim()) newErrors.serie = "Informe o número de série.";
     if (!categoria) newErrors.categoria = "Selecione a categoria.";
     if (!localizacao) newErrors.localizacao = "Selecione a localização.";
     if (!status) newErrors.status = "Selecione o status atual.";
@@ -225,6 +226,32 @@ function NovoAtivoPage() {
     setIsSubmitting(true);
     
     try {
+      // Validate duplicate patrimonio and serial number
+      const duplicates = await pb.collection("ativos").getList(1, 1, {
+        filter: `codigo_patrimonio = '${patrimonio.trim()}' || num_serie = '${serie.trim()}'`,
+        $autoCancel: false,
+      });
+
+      if (duplicates.items.length > 0) {
+        duplicates.items.forEach((item) => {
+          if (item.codigo_patrimonio === patrimonio.trim()) {
+            newErrors.patrimonio = "Código de patrimônio já cadastrado.";
+          }
+          if (item.num_serie === serie.trim()) {
+            newErrors.serie = "Número de série já cadastrado.";
+          }
+        });
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        toast.error("Erro ao validar dados.", {
+          description: "Existem campos inválidos ou duplicados.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       const categoryObj = categoriasDb.find((c) => c.nome === categoria);
       const categoriaId = categoryObj ? categoryObj.id : "";
 
@@ -240,12 +267,12 @@ function NovoAtivoPage() {
         status: statusSelecionado,
         setor: localizacao || null,
         marca_modelo: marcaModelo,
-        numero_serie: serie,
+        num_serie: serie,
         data_aquisicao: dataAquisicao ? new Date(dataAquisicao).toISOString() : null,
-        valor: valorCents / 100,
+        valor_ativo: valorCents / 100,
         nota_fiscal: notaFiscal,
         criticidade,
-        alugado,
+        is_alugado: alugado,
         fornecedor_locacao: alugado ? (fornecedor || null) : null,
         observacoes,
       }, {
@@ -310,12 +337,12 @@ function NovoAtivoPage() {
                       placeholder="Ex: Apple / A2780"
                     />
                   </Field>
-                  <Field label="Número de Série (S/N)">
+                  <Field label="Número de Série (S/N)" required error={errors.serie}>
                     <input
                       name="serie"
                       value={serie}
                       onChange={(e) => setSerie(e.target.value)}
-                      className={`${inputCls} font-mono`}
+                      className={`${errors.serie ? inputErrorCls : inputCls} font-mono`}
                       placeholder="EX: C02XG1..."
                     />
                   </Field>

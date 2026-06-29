@@ -24,14 +24,16 @@ export const Route = createFileRoute("/inventario/editar/$id")({
         marcaModelo: record.marca_modelo || "",
         categoria: categoryName,
         patrimonio: record.codigo_patrimonio || "",
-        serie: record.numero_serie || "",
+        serie: record.num_serie || record.numero_serie || "",
         status: displayStatus,
-        localizacao: record.localizacao || "TI",
+        localizacao: record.setor || record.localizacao || "",
         dataAquisicao: record.data_aquisicao ? new Date(record.data_aquisicao).toLocaleDateString("pt-BR") : "",
-        valor: record.valor ? record.valor.toString() : "",
+        valor: (record.valor_ativo !== undefined ? record.valor_ativo : record.valor) !== undefined ? (record.valor_ativo !== undefined ? record.valor_ativo : record.valor).toString() : "",
         notaFiscal: record.nota_fiscal || "",
         criticidade: record.criticidade || "Baixa",
         observacoes: record.observacoes || "",
+        is_alugado: record.is_alugado || record.alugado || false,
+        fornecedor_locacao: record.fornecedor_locacao || record.fornecedor || "",
       };
 
       return { ativo: mappedAtivo };
@@ -124,6 +126,34 @@ function Select({
   );
 }
 
+function SelectWithId({
+  value,
+  onChange,
+  options,
+  hasError,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { id: string; nome: string }[];
+  hasError?: boolean;
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${hasError ? inputErrorCls : inputCls} appearance-none pr-9`}
+      >
+        <option value="">Selecione...</option>
+        {options.map((o) => (
+          <option key={o.id} value={o.id}>{o.nome}</option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    </div>
+  );
+}
+
 function mapStatus(s: string): Status {
   if (s === "Em Uso" || s === "Em Manutenção" || s === "Estoque" || s === "Descarte") return s;
   if (s === "Manutenção") return "Em Manutenção";
@@ -173,9 +203,37 @@ function EditarAtivoPage() {
     fetchCategorias();
   }, []);
   const [localizacao, setLocalizacao] = useState(ativo.localizacao);
+  const [setoresDb, setSetoresDb] = useState<{ id: string; nome: string }[]>([]);
+
+  useEffect(() => {
+    async function fetchSetores() {
+      try {
+        const records = await pb.collection("setores").getFullList({ $autoCancel: false });
+        setSetoresDb(records.map((r) => ({ id: r.id, nome: r.nome })));
+      } catch (err) {
+        console.error("Failed to fetch sectors from PocketBase", err);
+      }
+    }
+    fetchSetores();
+  }, []);
+
   const [criticidade, setCriticidade] = useState<string>(ativo.criticidade);
-  const [alugado, setAlugado] = useState(false);
-  const [fornecedor, setFornecedor] = useState("Locaweb Corp");
+  const [alugado, setAlugado] = useState(ativo.is_alugado || false);
+  const [fornecedor, setFornecedor] = useState(ativo.fornecedor_locacao || "");
+  const [fornecedoresDb, setFornecedoresDb] = useState<{ id: string; nome: string }[]>([]);
+
+  useEffect(() => {
+    async function fetchFornecedores() {
+      try {
+        const records = await pb.collection("fornecedores").getFullList({ $autoCancel: false });
+        setFornecedoresDb(records.map((r) => ({ id: r.id, nome: r.nome })));
+      } catch (err) {
+        console.error("Failed to fetch suppliers from PocketBase", err);
+      }
+    }
+    fetchFornecedores();
+  }, []);
+
   const [valorCents, setValorCents] = useState(initialCentsFromValor(ativo.valor));
   const [dataAquisicao, setDataAquisicao] = useState(toISODate(ativo.dataAquisicao));
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -205,9 +263,14 @@ function EditarAtivoPage() {
     const newErrors: Record<string, string> = {};
     if (!nome.trim()) newErrors.nome = "Informe o nome do ativo.";
     if (!patrimonio.trim()) newErrors.patrimonio = "Informe o código de patrimônio.";
+    if (!serie.trim()) newErrors.serie = "Informe o número de série.";
     if (!categoria) newErrors.categoria = "Selecione a categoria.";
     if (!localizacao) newErrors.localizacao = "Selecione a localização.";
     if (!status) newErrors.status = "Selecione o status atual.";
+
+    if (alugado && !fornecedor) {
+      newErrors.fornecedor = "Selecione a empresa locadora.";
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -220,6 +283,33 @@ function EditarAtivoPage() {
     setIsSubmitting(true);
 
     try {
+      // Validate duplicate patrimonio
+      const dupPatrimonio = await pb.collection("ativos").getList(1, 1, {
+        filter: `codigo_patrimonio = '${patrimonio.trim()}' && id != '${ativo.id}'`,
+        $autoCancel: false,
+      });
+      if (dupPatrimonio.items.length > 0) {
+        newErrors.patrimonio = "Código de patrimônio já cadastrado em outro ativo.";
+      }
+
+      // Validate duplicate serial number
+      const dupSerie = await pb.collection("ativos").getList(1, 1, {
+        filter: `num_serie = '${serie.trim()}' && id != '${ativo.id}'`,
+        $autoCancel: false,
+      });
+      if (dupSerie.items.length > 0) {
+        newErrors.serie = "Número de série já cadastrado em outro ativo.";
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        toast.error("Erro ao validar dados.", {
+          description: "Existem campos inválidos ou duplicados.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       const categoryObj = categoriasDb.find((c) => c.nome === categoria);
       const categoriaId = categoryObj ? categoryObj.id : "";
 
@@ -229,14 +319,15 @@ function EditarAtivoPage() {
         status: status === "Estoque" ? "Em Estoque" : status,
         categoria: categoriaId || null,
         categoria_nome: categoria,
+        setor: localizacao || null,
         marca_modelo: marcaModelo,
-        numero_serie: serie,
+        num_serie: serie,
         data_aquisicao: dataAquisicao ? new Date(dataAquisicao).toISOString() : null,
-        valor: valorCents / 100,
+        valor_ativo: valorCents / 100,
         nota_fiscal: notaFiscal,
         criticidade,
-        alugado,
-        fornecedor: alugado ? fornecedor : null,
+        is_alugado: alugado,
+        fornecedor_locacao: alugado ? (fornecedor || null) : null,
         observacoes: observacoes,
       };
 
@@ -321,12 +412,12 @@ function EditarAtivoPage() {
                       className={`${inputCls} font-mono`}
                     />
                   </Field>
-                  <Field label="Número de Série (S/N)">
+                  <Field label="Número de Série (S/N)" required error={errors.serie}>
                     <input
                       name="serie"
                       value={serie}
                       onChange={(e) => setSerie(e.target.value)}
-                      className={`${inputCls} font-mono`}
+                      className={`${errors.serie ? inputErrorCls : inputCls} font-mono`}
                     />
                   </Field>
                 </div>
@@ -393,8 +484,13 @@ function EditarAtivoPage() {
                   </span>
                 </label>
                 {alugado && (
-                  <Field label="Empresa Locadora / Fornecedor">
-                    <Select value={fornecedor} onChange={setFornecedor} options={fornecedores} />
+                  <Field label="Empresa Locadora / Fornecedor" required error={errors.fornecedor}>
+                    <SelectWithId
+                      value={fornecedor}
+                      onChange={setFornecedor}
+                      options={fornecedoresDb}
+                      hasError={!!errors.fornecedor}
+                    />
                   </Field>
                 )}
               </div>
@@ -425,17 +521,11 @@ function EditarAtivoPage() {
                   />
                 </Field>
                 <Field label="Localização" required error={errors.localizacao}>
-                  <Select
+                  <SelectWithId
                     value={localizacao}
                     onChange={setLocalizacao}
                     hasError={!!errors.localizacao}
-                    options={[
-                      "TI",
-                      "RH",
-                      "TI - Almoxarifado",
-                      "Operações",
-                      "Sede Principal - Bloco A",
-                    ]}
+                    options={setoresDb}
                   />
                 </Field>
                 <Field label="Status Atual" required error={errors.status}>

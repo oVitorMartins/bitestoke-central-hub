@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, type FormEvent } from "react";
 import { Plus, Trash2, Pencil, Users, Building2, Tag, Truck, Monitor, Key } from "lucide-react";
 import { toast } from "sonner";
@@ -44,7 +44,29 @@ type Usuario = {
 };
 
 function ConfiguracoesPage() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<TabId>("usuarios");
+
+  const getPerfilValue = (m: any): string => {
+    if (!m?.perfil) return "";
+    if (Array.isArray(m.perfil)) {
+      return m.perfil[0] || "";
+    }
+    return m.perfil;
+  };
+
+  const isTecnico = getPerfilValue(pb.authStore.model) === "Técnico";
+
+  useEffect(() => {
+    if (isTecnico) {
+      toast.error("Acesso negado: Perfil Técnico não tem permissão para acessar as Configurações.");
+      navigate({ to: "/" });
+    }
+  }, [isTecnico, navigate]);
+
+  if (isTecnico) {
+    return null;
+  }
 
   return (
     <AppShell>
@@ -291,26 +313,25 @@ function UsuariosTab() {
                   Carregando usuários...
                 </td>
               </tr>
-            ) : usuarios.map((u) => (
-              <tr key={u.id} className="border-t">
-                <td className="px-4 py-3 font-semibold">{u.name || (u as any).nome || "N/A"}</td>
-                <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {u.created ? u.created.slice(0, 10) : "N/A"}
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                      u.perfil === "Admin"
-                        ? "bg-violet-bg text-violet ring-1 ring-violet/30"
-                        : u.perfil === "Gestor"
-                          ? "bg-warning-bg text-warning ring-1 ring-warning/30"
-                          : "bg-info-bg text-info ring-1 ring-info/30"
-                    }`}
-                  >
-                    {u.perfil || "Técnico"}
-                  </span>
-                </td>
+            ) : usuarios.map((u) => {
+              const rawPerfil = Array.isArray(u.perfil) ? u.perfil[0] : u.perfil;
+              const displayPerfil = rawPerfil || "Técnico";
+              const perfilClass = displayPerfil === "Admin"
+                ? "bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300 ring-1 ring-purple-600/20"
+                : "bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300 ring-1 ring-teal-600/20";
+
+              return (
+                <tr key={u.id} className="border-t">
+                  <td className="px-4 py-3 font-semibold">{u.name || (u as any).nome || "N/A"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {u.created ? u.created.slice(0, 10) : "N/A"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold ${perfilClass}`}>
+                      {displayPerfil}
+                    </span>
+                  </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-1">
                     <button
@@ -331,7 +352,8 @@ function UsuariosTab() {
                   </div>
                 </td>
               </tr>
-            ))}
+            );
+          })}
             {!loading && usuarios.length === 0 && (
               <tr className="border-t">
                 <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">

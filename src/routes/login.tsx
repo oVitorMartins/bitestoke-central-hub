@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { pb } from "@/lib/pocketbase";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -20,7 +21,7 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       toast.error("Preencha todos os campos para entrar.");
@@ -28,38 +29,10 @@ function LoginPage() {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-
-      // Determine user name and role based on input email
-      let nome = "Vitor Santos";
-      let perfil = "Administrador";
-
-      const normalizedEmail = email.toLowerCase().trim();
-      if (normalizedEmail.includes("camila.ribeiro")) {
-        nome = "Camila Ribeiro";
-        perfil = "Técnico";
-      } else if (normalizedEmail.includes("vitor.santos")) {
-        nome = "Vitor Santos";
-        perfil = "Administrador";
-      } else {
-        // Fallback name extraction from email
-        const userPart = normalizedEmail.split("@")[0];
-        const parts = userPart.split(".");
-        nome = parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(" ");
-        perfil = "Administrador";
-      }
-
-      localStorage.setItem(
-        "bitestoque_user",
-        JSON.stringify({
-          nome,
-          perfil,
-          email: normalizedEmail,
-        }),
-      );
-
-      toast.success(`Bem-vindo de volta, ${nome}!`);
+    try {
+      const authData = await pb.collection("users").authWithPassword(email, password);
+      const user = authData.record;
+      toast.success(`Bem-vindo de volta, ${user.name || user.email}!`);
 
       const redirect = sessionStorage.getItem("auth_redirect");
       if (redirect) {
@@ -68,7 +41,12 @@ function LoginPage() {
       } else {
         navigate({ to: "/" });
       }
-    }, 1000);
+    } catch (err) {
+      console.error("Login failed:", err);
+      toast.error("Credenciais inválidas. Verifique seu e-mail e senha.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

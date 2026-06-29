@@ -136,9 +136,9 @@ function Dashboard() {
     let accum = 0;
     const slices = statusPercentages.map((item) => {
       const color = 
-        item.status === "Em Uso" ? "#64748b" :
-        item.status === "Em Manutenção" ? "#d97706" :
-        item.status === "Estoque" ? "#18181b" : "#e11d48";
+        item.status === "Em Uso" ? "#22c55e" :
+        item.status === "Em Manutenção" ? "#f59e0b" :
+        item.status === "Estoque" ? "#3b82f6" : "#71717a";
       const start = accum;
       accum += item.pct;
       return `${color} ${start}% ${accum}%`;
@@ -289,7 +289,7 @@ function Dashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  <th className="pb-3 text-left">Data</th>
+                  <th className="pb-3 text-left min-w-[140px] whitespace-nowrap">Data</th>
                   <th className="pb-3 text-left">Responsável pela Movimentação</th>
                   <th className="pb-3 text-left">Ativo Afetado</th>
                   <th className="pb-3 text-left">Movimentação</th>
@@ -301,10 +301,10 @@ function Dashboard() {
                   const user = log.expand?.usuario;
                   return (
                     <tr key={i} className="border-t">
-                      <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap">
-                        {new Date(log.created).toLocaleString("pt-BR").slice(0, 16)}
+                      <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap min-w-[140px]">
+                        {new Date(log.created).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                       </td>
-                      <td className="py-3.5 pr-4 font-medium text-foreground">{user?.nome || "Sistema / Admin"}</td>
+                      <td className="py-3.5 pr-4 font-medium text-foreground">{log.responsavel || user?.name || user?.nome || "Sistema / Admin"}</td>
                       <td className="py-3.5 pr-4 font-mono text-xs">{asset ? `${asset.nome} (${asset.codigo_patrimonio})` : "Ativo Excluído"}</td>
                       <td className="py-3.5 text-muted-foreground">
                         <span className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-bold mr-2 uppercase ${getActionBadgeClass(log.acao)}`}>
@@ -331,13 +331,13 @@ function Dashboard() {
                       {asset ? `${asset.nome} (${asset.codigo_patrimonio})` : "Ativo Excluído"}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(log.created).toLocaleString("pt-BR").slice(0, 16)}
+                      {new Date(log.created).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs pt-1">
                     <div>
                       <span className="text-muted-foreground block font-medium">Responsável:</span>
-                      <span className="text-foreground font-semibold">{user?.nome || "Sistema / Admin"}</span>
+                      <span className="text-foreground font-semibold">{log.responsavel || user?.name || user?.nome || "Sistema / Admin"}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground block font-medium">Movimentação:</span>
@@ -374,9 +374,9 @@ function Dashboard() {
                 <div className="space-y-1.5 text-xs">
                   {statusPercentages.map((item) => {
                     const color = 
-                      item.status === "Em Uso" ? "bg-slate-500" :
-                      item.status === "Em Manutenção" ? "bg-amber-600" :
-                      item.status === "Estoque" ? "bg-zinc-900 dark:bg-zinc-100" : "bg-rose-600";
+                      item.status === "Em Uso" ? "bg-green-500" :
+                      item.status === "Em Manutenção" ? "bg-amber-500" :
+                      item.status === "Estoque" ? "bg-blue-500" : "bg-zinc-400";
                     return (
                       <div key={item.status} className="flex items-center gap-2">
                         <span className={`h-2.5 w-2.5 rounded-full ${color}`} />

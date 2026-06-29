@@ -126,13 +126,13 @@ export const Route = createFileRoute("/inventario/")({
 function statusClass(s: Status) {
   switch (s) {
     case "Em Uso":
-      return "bg-success-bg text-success ring-1 ring-success/30";
+      return "bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300 ring-1 ring-green-600/20";
     case "Em Manutenção":
-      return "bg-warning-bg text-warning ring-1 ring-warning/30";
+      return "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 ring-1 ring-amber-600/20";
     case "Estoque":
-      return "bg-info-bg text-info ring-1 ring-info/30";
+      return "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 ring-1 ring-blue-600/20";
     case "Descarte":
-      return "bg-danger-bg text-danger ring-1 ring-danger/30";
+      return "bg-zinc-200 text-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300 ring-1 ring-zinc-500/20";
   }
 }
 
@@ -208,11 +208,11 @@ function mapRecordToAtivo(r: any): Ativo {
     marcaModelo: r.marca_modelo || "",
     categoria: categoryName,
     patrimonio: r.codigo_patrimonio || "",
-    serie: r.numero_serie || "",
+    serie: r.num_serie || r.numero_serie || "",
     status: displayStatus,
     localizacao: r.expand?.setor?.nome || r.localizacao || "TI",
     dataAquisicao: r.data_aquisicao ? new Date(r.data_aquisicao).toLocaleDateString("pt-BR") : "",
-    valor: r.valor ? r.valor.toString() : "",
+    valor: (r.valor_ativo !== undefined ? r.valor_ativo : r.valor) !== undefined ? (r.valor_ativo !== undefined ? r.valor_ativo : r.valor).toString() : "",
     notaFiscal: r.nota_fiscal || "",
     criticidade: (r.criticidade as Criticidade) || "Baixa",
     observacoes: r.observacoes || "",
@@ -304,15 +304,13 @@ function InventarioPage() {
     fetchSetores();
   }, []);
 
+  const [model, setModel] = useState(pb.authStore.model);
+
   useEffect(() => {
-    const stored = localStorage.getItem("bitestoque_user");
-    if (stored) {
-      try {
-        setCurrentUser(JSON.parse(stored));
-      } catch (err) {
-        console.error("Failed to parse user session", err);
-      }
-    }
+    setModel(pb.authStore.model);
+    return pb.authStore.onChange((token, m) => {
+      setModel(m);
+    });
   }, []);
 
   // Disposal states
@@ -327,10 +325,20 @@ function InventarioPage() {
 
 
 
+  const getPerfilValue = (m: any): string => {
+    if (!m?.perfil) return "";
+    if (Array.isArray(m.perfil)) {
+      return m.perfil[0] || "";
+    }
+    return m.perfil;
+  };
+
+  const perfilValue = getPerfilValue(model);
+
   const canDispose =
-    currentUser?.perfil === "Administrador" ||
-    currentUser?.perfil === "Admin" ||
-    currentUser?.perfil === "Gestor";
+    perfilValue === "Administrador" ||
+    perfilValue === "Admin" ||
+    perfilValue === "Gestor";
 
   const handleDisposalClick = (a: Ativo) => {
     setDisposalAtivo(a);
@@ -370,7 +378,7 @@ function InventarioPage() {
     );
 
     const newLog = {
-      data: new Date().toLocaleString("pt-BR").slice(0, 16),
+      data: new Date().toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
       responsavel: currentUser?.nome || "Admin Usuário",
       ativo: disposalAtivo.patrimonio,
       movimentacao: `Descartou ativo. Motivo: ${disposalReason.trim()}`,
@@ -834,7 +842,7 @@ function InventarioPage() {
                       <div key={log.id} className="relative pl-4 text-xs">
                         <div className="absolute -left-[7px] top-1.5 h-2 w-2 rounded-full bg-zinc-400 dark:bg-zinc-600" />
                         <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground font-medium mb-0.5">
-                          <span>{new Date(log.created).toLocaleString("pt-BR").slice(0, 16)}</span>
+                          <span>{new Date(log.created).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                           <span className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${getActionBadgeClass(log.acao)}`}>
                             {log.acao}
                           </span>
