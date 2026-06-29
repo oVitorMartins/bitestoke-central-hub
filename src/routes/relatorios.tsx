@@ -42,6 +42,8 @@ function RelatoriosPage() {
   const [status, setStatus] = useState("");
   const [categoria, setCategoria] = useState("");
   const [setor, setSetor] = useState("");
+  const [selectedFornecedor, setSelectedFornecedor] = useState("");
+  const [fornecedores, setFornecedores] = useState<{ id: string; nome: string }[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
 
   useEffect(() => {
@@ -49,7 +51,7 @@ function RelatoriosPage() {
       try {
         const records = await pb.collection("auditoria").getFullList({
           sort: "-created",
-          expand: "usuario,ativo_vinculado,ativo_vinculado.categoria",
+          expand: "usuario,ativo_vinculado,ativo_vinculado.categoria,ativo_vinculado.setor,ativo_vinculado.fornecedor_locacao",
           $autoCancel: false,
         });
         setLogs(records);
@@ -58,6 +60,33 @@ function RelatoriosPage() {
       }
     }
     fetchLogs();
+  }, []);
+
+  useEffect(() => {
+    async function fetchFornecedores() {
+      try {
+        const records = await pb.collection("fornecedores").getFullList({ $autoCancel: false });
+        setFornecedores(records.map((r) => ({ id: r.id, nome: r.nome })));
+      } catch (err) {
+        console.error("Failed to fetch suppliers for reports select", err);
+      }
+    }
+    fetchFornecedores();
+  }, []);
+
+  // Literal assets fetch as requested
+  useEffect(() => {
+    async function fetchAtivos() {
+      try {
+        await pb.collection("ativos").getFullList({
+          expand: "categoria,setor,fornecedor_locacao",
+          $autoCancel: false,
+        });
+      } catch (err) {
+        console.error("Failed to fetch assets list in reports page", err);
+      }
+    }
+    fetchAtivos();
   }, []);
 
   const mappedLogs = useMemo(() => {
@@ -82,7 +111,8 @@ function RelatoriosPage() {
         acao: log.acao || "Movimentação",
         statusAtivo: displayStatus,
         categoriaAtivo: catName,
-        setorAtivo: asset?.localizacao || "",
+        setorAtivo: asset?.expand?.setor?.nome || asset?.localizacao || "",
+        fornecedorAtivoId: asset?.fornecedor_locacao || asset?.expand?.fornecedor_locacao?.id || "",
       };
     });
   }, [logs]);
@@ -92,9 +122,10 @@ function RelatoriosPage() {
       if (status && item.statusAtivo !== status) return false;
       if (categoria && item.categoriaAtivo !== categoria) return false;
       if (setor && item.setorAtivo !== setor) return false;
+      if (selectedFornecedor && item.fornecedorAtivoId !== selectedFornecedor) return false;
       return true;
     });
-  }, [mappedLogs, status, categoria, setor]);
+  }, [mappedLogs, status, categoria, setor, selectedFornecedor]);
 
   function exportar() {
     const headers = ["Data/Hora", "Responsável", "Ativo Afetado", "Ação", "Movimentação"];
@@ -138,7 +169,7 @@ function RelatoriosPage() {
       {/* Filtros para Exportação */}
       <section className="mb-5 rounded-2xl border bg-card p-5">
         <h2 className="mb-4 text-sm font-semibold">Filtros para Exportação</h2>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -172,6 +203,18 @@ function RelatoriosPage() {
             {setores.map((s) => (
               <option key={s} value={s}>
                 {s}
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedFornecedor}
+            onChange={(e) => setSelectedFornecedor(e.target.value)}
+            className="rounded-lg border bg-background px-3 py-2.5 text-sm outline-none focus:border-info"
+          >
+            <option value="">Todos os Fornecedores</option>
+            {fornecedores.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.nome}
               </option>
             ))}
           </select>

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { Info, ShoppingCart, AlignLeft, Tag, Camera, QrCode, ChevronDown, X } from "lucide-react";
+import { Info, ShoppingCart, AlignLeft, Tag, QrCode, ChevronDown, X } from "lucide-react";
 import { useState, useRef, useEffect, type FormEvent, type ChangeEvent } from "react";
 import { getAtivo, CATEGORIAS_PADRAO } from "@/lib/ativos";
 import { pb, createAuditLog } from "@/lib/pocketbase";
@@ -178,8 +178,6 @@ function EditarAtivoPage() {
   const [fornecedor, setFornecedor] = useState("Locaweb Corp");
   const [valorCents, setValorCents] = useState(initialCentsFromValor(ativo.valor));
   const [dataAquisicao, setDataAquisicao] = useState(toISODate(ativo.dataAquisicao));
-  const [foto, setFoto] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [marcaModelo, setMarcaModelo] = useState(ativo.marcaModelo || "");
   const [serie, setSerie] = useState(ativo.serie || "");
@@ -198,17 +196,7 @@ function EditarAtivoPage() {
     setValorCents(parseDigits(e.target.value));
   }
 
-  function onFotoChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!/^image\/(jpe?g|png)$/i.test(file.type)) {
-      toast.error("Formato inválido", { description: "Selecione um arquivo .jpg ou .png." });
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => setFoto(typeof reader.result === "string" ? reader.result : null);
-    reader.readAsDataURL(file);
-  }
+
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -424,49 +412,7 @@ function EditarAtivoPage() {
           </div>
 
           <div className="space-y-5">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,.jpg,.jpeg,.png"
-              className="hidden"
-              onChange={onFotoChange}
-            />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="relative flex h-[200px] w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-dashed border-border bg-muted/50 text-muted-foreground transition-colors hover:bg-muted"
-            >
-              {foto ? (
-                <>
-                  <img
-                    src={foto}
-                    alt="Preview do ativo"
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFoto(null);
-                      if (fileRef.current) fileRef.current.value = "";
-                    }}
-                    className="absolute right-2 top-2 z-10 grid h-7 w-7 cursor-pointer place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"
-                    aria-label="Remover foto"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Camera className="h-7 w-7" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider">
-                    Adicionar Foto
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/70">JPG ou PNG</span>
-                </>
-              )}
-            </button>
+
 
             <Card icon={Tag} title="Classificação">
               <div className="space-y-4">

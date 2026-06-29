@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { Info, ShoppingCart, AlignLeft, Tag, Camera, QrCode, ChevronDown, X } from "lucide-react";
+import { Info, ShoppingCart, AlignLeft, Tag, QrCode, ChevronDown, X } from "lucide-react";
 import { useState, useRef, useEffect, type FormEvent, type ChangeEvent } from "react";
 import { toast } from "sonner";
 import { CATEGORIAS_PADRAO } from "@/lib/ativos";
@@ -88,6 +88,34 @@ function Select({
   );
 }
 
+function SelectWithId({
+  value,
+  onChange,
+  options,
+  hasError,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { id: string; nome: string }[];
+  hasError?: boolean;
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${hasError ? inputErrorCls : inputCls} appearance-none pr-9`}
+      >
+        <option value="">Selecione...</option>
+        {options.map((o) => (
+          <option key={o.id} value={o.id}>{o.nome}</option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    </div>
+  );
+}
+
 // Currency mask helpers — store cents, render as BRL
 function formatBRL(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", {
@@ -123,13 +151,37 @@ function NovoAtivoPage() {
     fetchCategorias();
   }, []);
   const [localizacao, setLocalizacao] = useState("");
+  const [setoresDb, setSetoresDb] = useState<{ id: string; nome: string }[]>([]);
+
+  useEffect(() => {
+    async function fetchSetores() {
+      try {
+        const records = await pb.collection("setores").getFullList({ $autoCancel: false });
+        setSetoresDb(records.map((r) => ({ id: r.id, nome: r.nome })));
+      } catch (err) {
+        console.error("Failed to fetch sectors from PocketBase", err);
+      }
+    }
+    fetchSetores();
+  }, []);
   const [status, setStatus] = useState<Status | "">("");
   const [criticidade, setCriticidade] = useState("Baixa");
   const [alugado, setAlugado] = useState(false);
-  const [fornecedor, setFornecedor] = useState("Locaweb Corp");
+  const [fornecedor, setFornecedor] = useState("");
+  const [fornecedoresDb, setFornecedoresDb] = useState<{ id: string; nome: string }[]>([]);
+
+  useEffect(() => {
+    async function fetchFornecedores() {
+      try {
+        const records = await pb.collection("fornecedores").getFullList({ $autoCancel: false });
+        setFornecedoresDb(records.map((r) => ({ id: r.id, nome: r.nome })));
+      } catch (err) {
+        console.error("Failed to fetch suppliers from PocketBase", err);
+      }
+    }
+    fetchFornecedores();
+  }, []);
   const [valorCents, setValorCents] = useState(0);
-  const [foto, setFoto] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   const [marcaModelo, setMarcaModelo] = useState("");
   const [serie, setSerie] = useState("");
   const [notaFiscal, setNotaFiscal] = useState("");
@@ -140,30 +192,11 @@ function NovoAtivoPage() {
   // errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const fornecedores = [
-    "Locaweb Corp",
-    "Arklok Outsourcing",
-    "Simpress",
-    "Fornecedor Hospitalar SP",
-  ];
-
   function onValorChange(e: ChangeEvent<HTMLInputElement>) {
     setValorCents(parseDigits(e.target.value));
   }
 
-  function onFotoChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!/^image\/(jpe?g|png)$/i.test(file.type)) {
-      toast.error("Formato inválido", {
-        description: "Selecione um arquivo .jpg ou .png.",
-      });
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => setFoto(typeof reader.result === "string" ? reader.result : null);
-    reader.readAsDataURL(file);
-  }
+
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -175,6 +208,10 @@ function NovoAtivoPage() {
     if (!categoria) newErrors.categoria = "Selecione a categoria.";
     if (!localizacao) newErrors.localizacao = "Selecione a localização.";
     if (!status) newErrors.status = "Selecione o status atual.";
+
+    if (alugado && !fornecedor) {
+      newErrors.fornecedor = "Selecione a empresa locadora.";
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -200,7 +237,17 @@ function NovoAtivoPage() {
         nome: nomeDoEstado,
         codigo_patrimonio: patrimonioDoEstado,
         categoria: idDaCategoriaSelecionada,
-        status: statusSelecionado
+        status: statusSelecionado,
+        setor: localizacao || null,
+        marca_modelo: marcaModelo,
+        numero_serie: serie,
+        data_aquisicao: dataAquisicao ? new Date(dataAquisicao).toISOString() : null,
+        valor: valorCents / 100,
+        nota_fiscal: notaFiscal,
+        criticidade,
+        alugado,
+        fornecedor_locacao: alugado ? (fornecedor || null) : null,
+        observacoes,
       }, {
         $autoCancel: false
       });
@@ -338,8 +385,13 @@ function NovoAtivoPage() {
                   </span>
                 </label>
                 {alugado && (
-                  <Field label="Empresa Locadora / Fornecedor">
-                    <Select value={fornecedor} onChange={setFornecedor} options={fornecedores} />
+                  <Field label="Empresa Locadora / Fornecedor" required error={errors.fornecedor}>
+                    <SelectWithId
+                      value={fornecedor}
+                      onChange={setFornecedor}
+                      options={fornecedoresDb}
+                      hasError={!!errors.fornecedor}
+                    />
                   </Field>
                 )}
               </div>
@@ -359,49 +411,7 @@ function NovoAtivoPage() {
 
           {/* RIGHT */}
           <div className="space-y-5">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,.jpg,.jpeg,.png"
-              className="hidden"
-              onChange={onFotoChange}
-            />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="relative flex h-[200px] w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-dashed border-border bg-muted/50 text-muted-foreground transition-colors hover:bg-muted"
-            >
-              {foto ? (
-                <>
-                  <img
-                    src={foto}
-                    alt="Preview do ativo"
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFoto(null);
-                      if (fileRef.current) fileRef.current.value = "";
-                    }}
-                    className="absolute right-2 top-2 z-10 grid h-7 w-7 cursor-pointer place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"
-                    aria-label="Remover foto"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Camera className="h-7 w-7" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider">
-                    Adicionar Foto
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/70">JPG ou PNG</span>
-                </>
-              )}
-            </button>
+
 
             <Card icon={Tag} title="Classificação">
               <div className="space-y-4">
@@ -414,19 +424,11 @@ function NovoAtivoPage() {
                   />
                 </Field>
                 <Field label="Localização" required error={errors.localizacao}>
-                  <Select
+                  <SelectWithId
                     value={localizacao}
                     onChange={setLocalizacao}
                     hasError={!!errors.localizacao}
-                    options={[
-                      "Sede Principal - Bloco A",
-                      "Sede Principal - Bloco B",
-                      "Filial - Centro",
-                      "Almoxarifado",
-                      "TI",
-                      "RH",
-                      "Operações",
-                    ]}
+                    options={setoresDb}
                   />
                 </Field>
                 <Field label="Status Atual" required error={errors.status}>

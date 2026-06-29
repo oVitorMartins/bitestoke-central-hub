@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Plus, QrCode, X, Monitor } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { auditoria, ativos } from "@/lib/ativos";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { toast } from "sonner";
 import { pb } from "@/lib/pocketbase";
@@ -65,22 +65,102 @@ function Dashboard() {
   const navigate = useNavigate();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
+  const [ativosDb, setAtivosDb] = useState<any[]>([]);
+  const [licencasDb, setLicencasDb] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchLogs() {
+    async function loadDashboardData() {
       try {
-        const records = await pb.collection("auditoria").getFullList({
-          sort: "-created",
-          expand: "usuario,ativo_vinculado",
-          $autoCancel: false,
-        });
-        setLogs(records);
+        setIsLoading(true);
+        const [ativosRecord, licencasRecord, auditoriaRecord] = await Promise.all([
+          pb.collection('ativos').getFullList({ expand: 'categoria,setor', $autoCancel: false }),
+          pb.collection('licencas').getFullList({ $autoCancel: false }),
+          pb.collection("auditoria").getFullList({
+            sort: "-created",
+            expand: "usuario,ativo_vinculado",
+            $autoCancel: false,
+          })
+        ]);
+        setAtivosDb(ativosRecord);
+        setLicencasDb(licencasRecord);
+        setLogs(auditoriaRecord);
       } catch (err) {
-        console.error("Failed to fetch logs for dashboard", err);
+        console.error("Failed to load dashboard data", err);
+      } finally {
+        setIsLoading(false);
       }
     }
-    fetchLogs();
+    loadDashboardData();
   }, []);
+
+  const totalAtivos = ativosDb.length;
+  const emUso = ativosDb.filter((a) => a.status === "Em Uso" || a.status === "Uso").length;
+  const emManutencao = ativosDb.filter((a) => a.status === "Em Manutenção" || a.status === "Manutenção").length;
+  const licencasAtivas = licencasDb.reduce((acc, curr) => acc + (curr.chaves_em_uso || 0), 0);
+
+  const pctEmUso = totalAtivos ? Math.round((emUso / totalAtivos) * 100) : 0;
+  const pctEmManutencao = totalAtivos ? Math.round((emManutencao / totalAtivos) * 100) : 0;
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      "Em Uso": 0,
+      "Em Manutenção": 0,
+      "Estoque": 0,
+      "Descarte": 0
+    };
+    ativosDb.forEach((a) => {
+      const s = (a.status === "Em Estoque" || a.status === "Estoque" || a.status === "Disponível") ? "Estoque" : a.status;
+      if (s in counts) {
+        counts[s]++;
+      } else {
+        counts[s] = (counts[s] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [ativosDb]);
+
+  const statusPercentages = useMemo(() => {
+    const total = ativosDb.length;
+    if (total === 0) return [];
+    
+    return Object.entries(statusCounts).map(([status, count]) => ({
+      status,
+      count,
+      pct: Math.round((count / total) * 100)
+    }));
+  }, [statusCounts, ativosDb]);
+
+  const conicGradientString = useMemo(() => {
+    if (ativosDb.length === 0) return "bg-muted";
+    let accum = 0;
+    const slices = statusPercentages.map((item) => {
+      const color = 
+        item.status === "Em Uso" ? "#64748b" :
+        item.status === "Em Manutenção" ? "#d97706" :
+        item.status === "Estoque" ? "#18181b" : "#e11d48";
+      const start = accum;
+      accum += item.pct;
+      return `${color} ${start}% ${accum}%`;
+    });
+    return `conic-gradient(${slices.join(", ")})`;
+  }, [statusPercentages, ativosDb]);
+
+  const setorCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    ativosDb.forEach((a) => {
+      const s = a.expand?.setor?.nome || "Não Informado";
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const total = ativosDb.length;
+
+    return sorted.slice(0, 5).map(([nome, count]) => ({
+      nome,
+      quantidade: count,
+      percentual: total ? Math.round((count / total) * 100) : 0
+    }));
+  }, [ativosDb]);
 
   const handleScanSuccess = useCallback(
     (decodedText: string) => {
@@ -93,10 +173,10 @@ function Dashboard() {
         activeId = parts[0].replace("ATIVO:", "");
       }
 
-      const found = ativos.find(
+      const found = ativosDb.find(
         (a) =>
           a.id.toLowerCase() === activeId.toLowerCase() ||
-          a.patrimonio.toLowerCase() === decodedText.toLowerCase(),
+          a.codigo_patrimonio.toLowerCase() === decodedText.toLowerCase(),
       );
 
       if (found) {
@@ -106,48 +186,60 @@ function Dashboard() {
         toast.error("Ativo não cadastrado no sistema.");
       }
     },
-    [navigate],
+    [navigate, ativosDb],
   );
 
   return (
     <AppShell>
       {/* Metric cards */}
-      <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard label="Total de Ativos" value="1.240" />
-        <MetricCard
-          label="Em Uso"
-          value="980"
-          footer={
-            <div className="space-y-1.5">
-              <div className="h-1.5 w-full rounded-full bg-zinc-100 dark:bg-zinc-800">
-                <div className="h-full w-[79%] rounded-full bg-slate-600 dark:bg-slate-400" />
-              </div>
-              <div className="text-xs text-muted-foreground">79% da capacidade</div>
+      {isLoading ? (
+        <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="animate-pulse rounded-2xl border bg-card p-5 h-[145px] flex flex-col justify-between">
+              <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+              <div className="h-10 w-16 bg-muted rounded animate-pulse" />
+              <div className="h-3 w-full bg-muted rounded animate-pulse" />
             </div>
-          }
-        />
-        <MetricCard
-          label="Em Manutenção"
-          value="45"
-          valueColor="text-amber-600 dark:text-amber-500"
-          badge={
-            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-amber-600 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50">
-              ALERTA
-            </span>
-          }
-          footer={<div className="text-xs text-muted-foreground">Verificando integridade</div>}
-        />
-        <MetricCard
-          label="Em Estoque"
-          value="215"
-          badge={
-            <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-blue-600 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50">
-              ESTOQUE
-            </span>
-          }
-          footer={<div className="text-xs text-muted-foreground">Pronto para distribuição</div>}
-        />
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <MetricCard label="Total de Ativos" value={totalAtivos.toLocaleString("pt-BR")} />
+          <MetricCard
+            label="Em Uso"
+            value={emUso.toLocaleString("pt-BR")}
+            footer={
+              <div className="space-y-1.5">
+                <div className="h-1.5 w-full rounded-full bg-zinc-100 dark:bg-zinc-800">
+                  <div className="h-full rounded-full bg-slate-600 dark:bg-slate-400" style={{ width: `${pctEmUso}%` }} />
+                </div>
+                <div className="text-xs text-muted-foreground">{pctEmUso}% da capacidade</div>
+              </div>
+            }
+          />
+          <MetricCard
+            label="Em Manutenção"
+            value={emManutencao.toLocaleString("pt-BR")}
+            valueColor="text-amber-600 dark:text-amber-500"
+            badge={
+              <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-amber-600 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50">
+                ALERTA
+              </span>
+            }
+            footer={<div className="text-xs text-muted-foreground">{pctEmManutencao}% em reparos</div>}
+          />
+          <MetricCard
+            label="Licenças Ativas"
+            value={licencasAtivas.toLocaleString("pt-BR")}
+            badge={
+              <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-blue-600 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50">
+                LICENÇAS
+              </span>
+            }
+            footer={<div className="text-xs text-muted-foreground">Chaves em uso no momento</div>}
+          />
+        </div>
+      )}
 
       {/* Action cards */}
       <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -263,23 +355,74 @@ function Dashboard() {
           </div>
         </section>
 
-        <section className="rounded-2xl border bg-card p-5">
-          <h2 className="mb-4 font-semibold">Distribuição por Categoria</h2>
-          <div className="space-y-4">
-            {categorias.map((c) => (
-              <div key={c.nome} className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm font-medium">
-                  <span className="text-foreground">{c.nome}</span>
-                  <span className="text-muted-foreground">{c.pct}%</span>
+        {/* Charts Column */}
+        <section className="space-y-4">
+          {/* Card Pizza Status */}
+          <div className="rounded-2xl border bg-card p-5">
+            <h2 className="mb-4 font-semibold">Gráfico por Status</h2>
+            {isLoading ? (
+              <div className="animate-pulse space-y-4">
+                <div className="h-28 w-28 rounded-full bg-muted mx-auto animate-pulse" />
+                <div className="h-10 w-full bg-muted rounded animate-pulse" />
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                <div className="relative flex items-center justify-center shrink-0">
+                  <div className="h-24 w-24 rounded-full border border-border" style={{ background: conicGradientString }} />
+                  <div className="absolute h-14 w-14 rounded-full bg-card" />
                 </div>
-                <div className="h-1.5 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${c.barColor}`}
-                    style={{ width: `${c.pct}%` }}
-                  />
+                <div className="space-y-1.5 text-xs">
+                  {statusPercentages.map((item) => {
+                    const color = 
+                      item.status === "Em Uso" ? "bg-slate-500" :
+                      item.status === "Em Manutenção" ? "bg-amber-600" :
+                      item.status === "Estoque" ? "bg-zinc-900 dark:bg-zinc-100" : "bg-rose-600";
+                    return (
+                      <div key={item.status} className="flex items-center gap-2">
+                        <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
+                        <span className="font-semibold text-foreground">{item.status}:</span>
+                        <span className="text-muted-foreground">{item.count} ({item.pct}%)</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            ))}
+            )}
+          </div>
+
+          {/* Card Setores Barras */}
+          <div className="rounded-2xl border bg-card p-5">
+            <h2 className="mb-4 font-semibold">Gráfico por Setor</h2>
+            {isLoading ? (
+              <div className="animate-pulse space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-1">
+                    <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+                    <div className="h-2 w-full bg-muted rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {setorCounts.map((s) => (
+                  <div key={s.nome} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-foreground truncate max-w-[120px]">{s.nome}</span>
+                      <span className="text-muted-foreground">{s.quantidade} ativos ({s.percentual}%)</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-slate-600 dark:bg-slate-400"
+                        style={{ width: `${s.percentual}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {setorCounts.length === 0 && (
+                  <p className="text-center text-xs text-muted-foreground">Nenhum setor disponível.</p>
+                )}
+              </div>
+            )}
           </div>
         </section>
       </div>

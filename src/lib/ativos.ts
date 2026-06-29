@@ -19,6 +19,7 @@ export type Ativo = {
   notaFiscal: string;
   criticidade: Criticidade;
   observacoes: string;
+  expand?: any;
 };
 
 export type CategoriaObjeto = {

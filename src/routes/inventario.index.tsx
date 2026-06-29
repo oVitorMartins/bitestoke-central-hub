@@ -210,12 +210,13 @@ function mapRecordToAtivo(r: any): Ativo {
     patrimonio: r.codigo_patrimonio || "",
     serie: r.numero_serie || "",
     status: displayStatus,
-    localizacao: r.localizacao || "TI",
+    localizacao: r.expand?.setor?.nome || r.localizacao || "TI",
     dataAquisicao: r.data_aquisicao ? new Date(r.data_aquisicao).toLocaleDateString("pt-BR") : "",
     valor: r.valor ? r.valor.toString() : "",
     notaFiscal: r.nota_fiscal || "",
     criticidade: (r.criticidade as Criticidade) || "Baixa",
     observacoes: r.observacoes || "",
+    expand: r.expand,
   };
 }
 
@@ -234,6 +235,7 @@ function InventarioPage() {
   const setAtivosList = setAtivos;
   const [currentUser, setCurrentUser] = useState<{ nome: string; perfil: string } | null>(null);
   const [categoriasDb, setCategoriasDb] = useState<string[]>([]);
+  const [setoresDb, setSetoresDb] = useState<string[]>([]);
   const [historicoLogs, setHistoricoLogs] = useState<any[]>([]);
 
   useEffect(() => {
@@ -260,7 +262,7 @@ function InventarioPage() {
   async function fetchAtivos() {
     try {
       const records = await pb.collection("ativos").getFullList({
-        expand: "categoria",
+        expand: "categoria,setor,fornecedor_locacao",
         $autoCancel: false,
       });
       setAtivos(records.map(mapRecordToAtivo));
@@ -286,6 +288,20 @@ function InventarioPage() {
       }
     }
     fetchCategorias();
+  }, []);
+
+  useEffect(() => {
+    async function fetchSetores() {
+      try {
+        const records = await pb.collection("setores").getFullList({ $autoCancel: false });
+        setSetoresDb(records.map((r) => r.nome));
+      } catch (err) {
+        console.error("Failed to fetch sectors from PocketBase", err);
+        // Fallback to local hardcoded sectors
+        setSetoresDb(Array.from(setores));
+      }
+    }
+    fetchSetores();
   }, []);
 
   useEffect(() => {
@@ -537,7 +553,7 @@ function InventarioPage() {
         <SelectChip
           value={fSetor}
           onChange={setFSetor}
-          options={setores}
+          options={setoresDb}
           allLabel="Todos Setores"
         />
         <button
@@ -591,7 +607,14 @@ function InventarioPage() {
                         {a.status}
                       </span>
                     </td>
-                    <td className="px-3 py-4 text-muted-foreground">{a.localizacao}</td>
+                    <td className="px-3 py-4 text-muted-foreground">
+                      <div>{a.expand?.setor?.nome || a.localizacao}</div>
+                      {a.expand?.fornecedor_locacao?.nome && (
+                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                          Locado: {a.expand.fornecedor_locacao.nome}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-1">
                         <button
@@ -678,7 +701,14 @@ function InventarioPage() {
                   </div>
                   <div className="col-span-2">
                     <span className="block font-medium">Localização:</span>
-                    <span className="text-foreground">{a.localizacao}</span>
+                    <span className="text-foreground">
+                      {a.expand?.setor?.nome || a.localizacao}
+                      {a.expand?.fornecedor_locacao?.nome && (
+                        <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">
+                          Locado: {a.expand.fornecedor_locacao.nome}
+                        </span>
+                      )}
+                    </span>
                   </div>
                 </div>
 
@@ -770,6 +800,9 @@ function InventarioPage() {
               <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
                 <Detail label="Categoria" value={viewAtivo.categoria} />
                 <Detail label="Localização" value={viewAtivo.localizacao} />
+                {viewAtivo.expand?.fornecedor_locacao?.nome && (
+                  <Detail label="Fornecedor de Locação" value={viewAtivo.expand.fornecedor_locacao.nome} />
+                )}
                 <Detail label="Patrimônio" value={viewAtivo.patrimonio} mono />
                 <Detail label="Número de Série (S/N)" value={viewAtivo.serie} mono />
                 <Detail label="Marca / Modelo" value={viewAtivo.marcaModelo} />
