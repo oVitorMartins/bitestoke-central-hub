@@ -133,6 +133,8 @@ function statusClass(s: Status) {
       return "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 ring-1 ring-blue-600/20";
     case "Descarte":
       return "bg-zinc-200 text-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300 ring-1 ring-zinc-500/20";
+    case "Empréstimo":
+      return "bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300 ring-1 ring-purple-600/20";
   }
 }
 
@@ -192,7 +194,12 @@ function mapRecordToAtivo(r: any): Ativo {
   const categoryName = r.expand?.categoria?.nome || r.categoria_nome || "Geral";
 
   let displayStatus: Status = "Estoque";
-  if (r.status === "Em Uso" || r.status === "Em Manutenção" || r.status === "Descarte") {
+  if (
+    r.status === "Em Uso" ||
+    r.status === "Em Manutenção" ||
+    r.status === "Descarte" ||
+    r.status === "Empréstimo"
+  ) {
     displayStatus = r.status as Status;
   } else if (r.status === "Em Estoque" || r.status === "Estoque") {
     displayStatus = "Estoque";
@@ -1119,9 +1126,13 @@ function InventarioPage() {
               className="flex flex-col items-center justify-between border border-zinc-300 p-3 rounded-lg text-center h-[180px] bg-white text-black"
             >
               {/* Header compact logo */}
-              <div className="flex items-center gap-1 border-b border-zinc-200 pb-1.5 w-full justify-center">
-                <Package className="h-3.5 w-3.5 text-black shrink-0" />
-                <span className="text-[10px] font-bold tracking-tight uppercase">BitEstoque</span>
+              <div className="flex items-center gap-1.5 border-b border-zinc-200 pb-1.0 w-full justify-center p-1">
+                <img
+                  src="/logo_bit_estoque_preto-removebg-preview.png"
+                  alt="HMS Logo"
+                  className="h-5 w-auto object-contain shrink-0"
+                />
+                <span className="text-[10px] font-bold tracking-tight uppercase">HMS - TI</span>
               </div>
               {/* QR Code */}
               <div className="flex-1 flex items-center justify-center p-1">

@@ -147,7 +147,9 @@ function Dashboard() {
             ? "#f59e0b"
             : item.status === "Estoque"
               ? "#3b82f6"
-              : "#71717a";
+              : item.status === "Empréstimo"
+                ? "#a855f7"
+                : "#71717a";
       const start = accum;
       accum += item.pct;
       return `${color} ${start}% ${accum}%`;
@@ -422,7 +424,9 @@ function Dashboard() {
                           ? "bg-amber-500"
                           : item.status === "Estoque"
                             ? "bg-blue-500"
-                            : "bg-zinc-400";
+                            : item.status === "Empréstimo"
+                              ? "bg-purple-500"
+                              : "bg-zinc-400";
                     return (
                       <div key={item.status} className="flex items-center gap-2">
                         <span className={`h-2.5 w-2.5 rounded-full ${color}`} />

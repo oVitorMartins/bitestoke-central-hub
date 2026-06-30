@@ -1,6 +1,16 @@
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { Info, ShoppingCart, AlignLeft, Tag, QrCode, ChevronDown, X } from "lucide-react";
+import {
+  Info,
+  ShoppingCart,
+  AlignLeft,
+  Tag,
+  QrCode,
+  ChevronDown,
+  X,
+  User,
+  Printer,
+} from "lucide-react";
 import { useState, useRef, useEffect, type FormEvent, type ChangeEvent } from "react";
 import { getAtivo, CATEGORIAS_PADRAO } from "@/lib/ativos";
 import { pb, createAuditLog } from "@/lib/pocketbase";
@@ -40,6 +50,14 @@ export const Route = createFileRoute("/inventario/editar/$id")({
         observacoes: record.observacoes || "",
         is_alugado: record.is_alugado || record.alugado || false,
         fornecedor_locacao: record.fornecedor_locacao || record.fornecedor || "",
+        is_emprestimo: record.is_emprestimo || false,
+        emprestimo_colaborador: record.emprestimo_colaborador || "",
+        emprestimo_data_saida: record.emprestimo_data_saida
+          ? record.emprestimo_data_saida.substring(0, 10)
+          : "",
+        emprestimo_data_devolucao: record.emprestimo_data_devolucao
+          ? record.emprestimo_data_devolucao.substring(0, 10)
+          : "",
       };
 
       return { ativo: mappedAtivo };
@@ -163,7 +181,14 @@ function SelectWithId({
 }
 
 function mapStatus(s: string): Status {
-  if (s === "Em Uso" || s === "Em Manutenção" || s === "Estoque" || s === "Descarte") return s;
+  if (
+    s === "Em Uso" ||
+    s === "Em Manutenção" ||
+    s === "Estoque" ||
+    s === "Descarte" ||
+    s === "Empréstimo"
+  )
+    return s;
   if (s === "Manutenção") return "Em Manutenção";
   if (s === "Aguardando Descarte") return "Descarte";
   if (s === "Disponível") return "Estoque";
@@ -251,6 +276,30 @@ function EditarAtivoPage() {
   const [observacoes, setObservacoes] = useState(ativo.observacoes || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [isEmprestimo, setIsEmprestimo] = useState(ativo.is_emprestimo || false);
+  const [emprestimoColaborador, setEmprestimoColaborador] = useState(
+    ativo.emprestimo_colaborador || "",
+  );
+  const [emprestimoDataSaida, setEmprestimoDataSaida] = useState(
+    ativo.emprestimo_data_saida || new Date().toLocaleDateString("sv-SE"),
+  );
+  const [emprestimoDataDevolucao, setEmprestimoDataDevolucao] = useState(
+    ativo.emprestimo_data_devolucao || "",
+  );
+
+  const handlePrintTermo = () => {
+    if (!emprestimoColaborador.trim() || !emprestimoDataSaida || !emprestimoDataDevolucao) {
+      toast.error(
+        "Por favor, preencha todos os campos do fluxo de empréstimo antes de gerar o termo.",
+      );
+      return;
+    }
+    toast("Gerando Termo de Responsabilidade...");
+    setTimeout(() => {
+      window.print();
+    }, 300);
+  };
+
   const fornecedores = [
     "Locaweb Corp",
     "Arklok Outsourcing",
@@ -286,6 +335,18 @@ function EditarAtivoPage() {
 
     if (alugado && !fornecedor) {
       newErrors.fornecedor = "Selecione a empresa locadora.";
+    }
+
+    if (isEmprestimo) {
+      if (!emprestimoColaborador.trim()) {
+        newErrors.emprestimoColaborador = "Informe o nome do colaborador.";
+      }
+      if (!emprestimoDataSaida) {
+        newErrors.emprestimoDataSaida = "Informe a data do empréstimo.";
+      }
+      if (!emprestimoDataDevolucao) {
+        newErrors.emprestimoDataDevolucao = "Informe a previsão de devolução.";
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -332,7 +393,7 @@ function EditarAtivoPage() {
       const data = {
         nome,
         codigo_patrimonio: patrimonio,
-        status: status === "Estoque" ? "Em Estoque" : status,
+        status: isEmprestimo ? "Empréstimo" : status === "Estoque" ? "Em Estoque" : status,
         categoria: categoriaId || null,
         categoria_nome: categoria,
         setor: localizacao || null,
@@ -345,12 +406,24 @@ function EditarAtivoPage() {
         is_alugado: alugado,
         fornecedor_locacao: alugado ? fornecedor || null : null,
         observacoes: observacoes,
+        is_emprestimo: isEmprestimo,
+        emprestimo_colaborador: isEmprestimo ? emprestimoColaborador : "",
+        emprestimo_data_saida:
+          isEmprestimo && emprestimoDataSaida ? new Date(emprestimoDataSaida).toISOString() : null,
+        emprestimo_data_devolucao:
+          isEmprestimo && emprestimoDataDevolucao
+            ? new Date(emprestimoDataDevolucao).toISOString()
+            : null,
       };
 
       await pb.collection("ativos").update(ativo.id, data, { $autoCancel: false });
 
       // Create logs based on event mapping
-      const mappedNewStatus = status === "Estoque" ? "Em Estoque" : status;
+      const mappedNewStatus = isEmprestimo
+        ? "Empréstimo"
+        : status === "Estoque"
+          ? "Em Estoque"
+          : status;
       const mappedOldStatus = ativo.status === "Estoque" ? "Em Estoque" : ativo.status;
 
       // 1. Mudança de Setor / Localidade
@@ -384,6 +457,14 @@ function EditarAtivoPage() {
       if (ativo.patrimonio !== patrimonio) {
         characteristicsChanges.push(
           `Patrimônio "${ativo.patrimonio}" foi alterado para "${patrimonio}"`,
+        );
+      }
+
+      if (ativo.is_emprestimo !== isEmprestimo) {
+        characteristicsChanges.push(
+          isEmprestimo
+            ? `Ativo emprestado para o colaborador "${emprestimoColaborador}"`
+            : "Empréstimo finalizado (Ativo devolvido)",
         );
       }
 
@@ -467,6 +548,71 @@ function EditarAtivoPage() {
                     </button>
                   </div>
                 </Field>
+              </div>
+            </Card>
+
+            <Card icon={User} title="Fluxo de Empréstimo">
+              <div className="space-y-4">
+                <label className="flex items-center gap-2.5 pt-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isEmprestimo}
+                    onChange={(e) => setIsEmprestimo(e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-violet"
+                  />
+                  <span className="text-sm font-semibold text-foreground">
+                    Este ativo está emprestado? (Home Office / Eventos)
+                  </span>
+                </label>
+
+                {isEmprestimo && (
+                  <div className="space-y-4 border-t border-dashed pt-4">
+                    <Field
+                      label="Nome do Colaborador / Destinatário"
+                      required
+                      error={errors.emprestimoColaborador}
+                    >
+                      <input
+                        value={emprestimoColaborador}
+                        onChange={(e) => setEmprestimoColaborador(e.target.value)}
+                        className={errors.emprestimoColaborador ? inputErrorCls : inputCls}
+                        placeholder="Ex: João Silva"
+                      />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field label="Data de Empréstimo" required error={errors.emprestimoDataSaida}>
+                        <input
+                          type="date"
+                          value={emprestimoDataSaida}
+                          onChange={(e) => setEmprestimoDataSaida(e.target.value)}
+                          className={errors.emprestimoDataSaida ? inputErrorCls : inputCls}
+                        />
+                      </Field>
+                      <Field
+                        label="Previsão de Devolução"
+                        required
+                        error={errors.emprestimoDataDevolucao}
+                      >
+                        <input
+                          type="date"
+                          value={emprestimoDataDevolucao}
+                          onChange={(e) => setEmprestimoDataDevolucao(e.target.value)}
+                          className={errors.emprestimoDataDevolucao ? inputErrorCls : inputCls}
+                        />
+                      </Field>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handlePrintTermo}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                    >
+                      <Printer className="h-4 w-4" />
+                      Gerar Termo de Empréstimo (PDF)
+                    </button>
+                  </div>
+                )}
               </div>
             </Card>
 
@@ -612,6 +758,146 @@ function EditarAtivoPage() {
           </div>
         </div>
       </form>
+
+      {/* Invisible Print Layout for Termo de Responsabilidade */}
+      {isEmprestimo && (
+        <div
+          id="print-area-termo"
+          className="hidden print:block font-sans text-black max-w-4xl mx-auto p-8 bg-white border border-zinc-200 rounded-lg"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between border-b pb-4 mb-6">
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/logo_bit_estoque_preto-removebg-preview.png"
+                alt="HMS Logo"
+                className="h-10 w-auto object-contain"
+              />
+              <span className="text-xl font-bold tracking-tight uppercase">HMS - TI</span>
+            </div>
+            <div className="text-right text-xs text-zinc-500">
+              Data de Emissão: {new Date().toLocaleDateString("pt-BR")}
+            </div>
+          </div>
+
+          {/* Title */}
+          <div className="text-center mb-8">
+            <h1 className="text-lg font-bold uppercase tracking-wide">
+              TERMO DE RESPONSABILIDADE E EMPRÉSTIMO DE ATIVO DE TI
+            </h1>
+          </div>
+
+          {/* Body content */}
+          <div className="space-y-6 text-sm leading-relaxed text-zinc-800">
+            <p>
+              Por este instrumento, declaramos que o colaborador abaixo identificado recebeu, a
+              título de empréstimo para fins de trabalho/atividades institucionais, o equipamento de
+              tecnologia da informação de propriedade do <strong>HMS - TI</strong>, comprometendo-se
+              a zelar pelo seu bom estado de conservação e funcionamento, nos termos descritos neste
+              documento.
+            </p>
+
+            {/* Colaborador / Fluxo info */}
+            <div className="bg-zinc-50 p-4 rounded-lg border border-zinc-200 space-y-2">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1">
+                Informações do Beneficiário & Prazo
+              </h2>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                <div>
+                  <strong className="text-zinc-500">Colaborador / Destinatário:</strong>
+                  <div className="text-zinc-900 font-semibold text-sm mt-0.5">
+                    {emprestimoColaborador}
+                  </div>
+                </div>
+                <div>
+                  <strong className="text-zinc-500">Técnico Responsável:</strong>
+                  <div className="text-zinc-900 font-semibold text-sm mt-0.5">
+                    {pb.authStore.model?.name || pb.authStore.model?.username || "Técnico de TI"}
+                  </div>
+                </div>
+                <div>
+                  <strong className="text-zinc-500">Data de Empréstimo:</strong>
+                  <div className="text-zinc-900 font-semibold text-sm mt-0.5">
+                    {emprestimoDataSaida
+                      ? new Date(emprestimoDataSaida + "T00:00:00").toLocaleDateString("pt-BR")
+                      : "-"}
+                  </div>
+                </div>
+                <div>
+                  <strong className="text-zinc-500">Previsão de Devolução:</strong>
+                  <div className="text-zinc-900 font-semibold text-sm mt-0.5">
+                    {emprestimoDataDevolucao
+                      ? new Date(emprestimoDataDevolucao + "T00:00:00").toLocaleDateString("pt-BR")
+                      : "-"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Ativo info */}
+            <div className="bg-zinc-50 p-4 rounded-lg border border-zinc-200 space-y-2">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1">
+                Especificações do Equipamento
+              </h2>
+              <div className="grid grid-cols-3 gap-4 text-xs">
+                <div>
+                  <strong className="text-zinc-500">Nome do Ativo:</strong>
+                  <div className="text-zinc-900 font-semibold text-sm mt-0.5">{nome}</div>
+                </div>
+                <div>
+                  <strong className="text-zinc-500">Código de Patrimônio:</strong>
+                  <div className="text-zinc-900 font-mono font-semibold text-sm mt-0.5">
+                    {patrimonio}
+                  </div>
+                </div>
+                <div>
+                  <strong className="text-zinc-500">Número de Série:</strong>
+                  <div className="text-zinc-900 font-mono font-semibold text-sm mt-0.5">
+                    {serie}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Clauses */}
+            <div className="space-y-3 text-[11px] text-zinc-600 border-t pt-4">
+              <p>
+                <strong>Cláusula 1ª:</strong> O equipamento destina-se exclusivamente ao uso em
+                atividades profissionais de interesse do HMS.
+              </p>
+              <p>
+                <strong>Cláusula 2ª:</strong> O colaborador assume total responsabilidade civil e
+                criminal pela guarda, conservação e uso adequado do equipamento. Em caso de perda,
+                furto, roubo ou danos decorrentes de negligência ou mau uso, o colaborador poderá
+                ser responsabilizado pelas despesas de conserto ou reposição.
+              </p>
+              <p>
+                <strong>Cláusula 3ª:</strong> O colaborador compromete-se a devolver o equipamento
+                nas mesmas condições em que o recebeu na data estipulada de devolução ou
+                imediatamente quando solicitado pelo setor de TI.
+              </p>
+            </div>
+
+            {/* Signatures */}
+            <div className="grid grid-cols-2 gap-8 pt-16 text-center text-xs">
+              <div className="space-y-1">
+                <div className="border-t border-zinc-400 pt-2 w-3/4 mx-auto font-semibold">
+                  Assinatura do Técnico
+                </div>
+                <div className="text-[10px] text-zinc-500">HMS - TI</div>
+              </div>
+              <div className="space-y-1">
+                <div className="border-t border-zinc-400 pt-2 w-3/4 mx-auto font-semibold">
+                  Assinatura do Colaborador
+                </div>
+                <div className="text-[10px] text-zinc-500 font-semibold">
+                  {emprestimoColaborador}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }

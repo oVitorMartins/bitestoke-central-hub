@@ -1,6 +1,6 @@
 import { Laptop, Monitor, Router as RouterIcon, Printer } from "lucide-react";
 
-export type Status = "Estoque" | "Em Uso" | "Em Manutenção" | "Descarte";
+export type Status = "Estoque" | "Em Uso" | "Em Manutenção" | "Descarte" | "Empréstimo";
 export type Criticidade = "Baixa" | "Média" | "Alta" | "Crítica";
 
 export type Ativo = {
@@ -43,7 +43,13 @@ export const CATEGORIAS_PADRAO: CategoriaObjeto[] = [
 ];
 
 export const categorias = CATEGORIAS_PADRAO.map((c) => c.nome);
-export const statusList: Status[] = ["Estoque", "Em Uso", "Em Manutenção", "Descarte"];
+export const statusList: Status[] = [
+  "Estoque",
+  "Em Uso",
+  "Em Manutenção",
+  "Descarte",
+  "Empréstimo",
+];
 export const setores = ["TI", "RH", "TI - Almoxarifado", "Operações"] as const;
 
 export const ativos: Ativo[] = [

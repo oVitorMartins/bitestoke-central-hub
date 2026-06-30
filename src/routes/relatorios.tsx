@@ -44,7 +44,21 @@ function RelatoriosPage() {
   const [setor, setSetor] = useState("");
   const [selectedFornecedor, setSelectedFornecedor] = useState("");
   const [fornecedores, setFornecedores] = useState<{ id: string; nome: string }[]>([]);
+  const [setoresDb, setSetoresDb] = useState<string[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchSetores() {
+      try {
+        const records = await pb.collection("setores").getFullList({ $autoCancel: false });
+        setSetoresDb(records.map((r) => r.nome));
+      } catch (err) {
+        console.error("Failed to fetch sectors from PocketBase for reports", err);
+        setSetoresDb(Array.from(setores));
+      }
+    }
+    fetchSetores();
+  }, []);
 
   useEffect(() => {
     async function fetchLogs() {
@@ -124,45 +138,97 @@ function RelatoriosPage() {
     });
   }, [logs]);
 
-  const filteredAuditoria = useMemo(() => {
-    return mappedLogs.filter((item) => {
-      if (status && item.statusAtivo !== status) return false;
-      if (categoria && item.categoriaAtivo !== categoria) return false;
-      if (setor && item.setorAtivo !== setor) return false;
-      if (selectedFornecedor && item.fornecedorAtivoId !== selectedFornecedor) return false;
-      return true;
-    });
-  }, [mappedLogs, status, categoria, setor, selectedFornecedor]);
+  async function exportar() {
+    try {
+      toast("Buscando ativos do inventário...");
 
-  function exportar() {
-    const headers = ["Data/Hora", "Responsável", "Ativo Afetado", "Ação", "Movimentação"];
+      const filterParts: string[] = [];
 
-    const rows = filteredAuditoria.map((a) => [
-      a.data,
-      a.responsavel,
-      a.ativo,
-      a.acao,
-      a.movimentacao,
-    ]);
+      if (status) {
+        if (status === "Estoque") {
+          filterParts.push("(status = 'Estoque' || status = 'Em Estoque')");
+        } else {
+          filterParts.push(`status = '${status}'`);
+        }
+      }
 
-    const csvContent = [
-      "sep=;",
-      headers.join(";"),
-      ...rows.map((row) =>
-        row.map((val) => `"${(val || "").toString().replace(/"/g, '""')}"`).join(";"),
-      ),
-    ].join("\n");
+      if (categoria) {
+        filterParts.push(`categoria.nome = '${categoria}'`);
+      }
 
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "relatorio_movimentacoes.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success("Relatório de auditoria exportado com sucesso!");
+      if (setor) {
+        filterParts.push(`setor.nome = '${setor}'`);
+      }
+
+      if (selectedFornecedor) {
+        filterParts.push(`fornecedor_locacao = '${selectedFornecedor}'`);
+      }
+
+      const filterString = filterParts.join(" && ");
+
+      const records = await pb.collection("ativos").getFullList({
+        filter: filterString || undefined,
+        expand: "categoria,setor,fornecedor_locacao",
+        sort: "-created",
+        $autoCancel: false,
+      });
+
+      if (records.length === 0) {
+        toast.error("Nenhum ativo encontrado para os filtros selecionados.");
+        return;
+      }
+
+      const headers = [
+        "Código de Patrimônio",
+        "Número de Série",
+        "Nome do Ativo",
+        "Categoria",
+        "Setor",
+        "Status",
+        "Fornecedor",
+      ];
+
+      const rows = records.map((r) => {
+        const catName = r.expand?.categoria?.nome || r.categoria_nome || "";
+        const setorName = r.expand?.setor?.nome || r.localizacao || "";
+        const fornecedorName = r.expand?.fornecedor_locacao?.nome || "";
+        const displayStatus =
+          r.status === "Em Estoque" || r.status === "Estoque" ? "Estoque" : r.status;
+
+        return [
+          r.codigo_patrimonio || "",
+          r.num_serie || r.numero_serie || "",
+          r.nome || "",
+          catName,
+          setorName,
+          displayStatus || "",
+          fornecedorName,
+        ];
+      });
+
+      const csvContent = [
+        "sep=;",
+        headers.join(";"),
+        ...rows.map((row) =>
+          row.map((val) => `"${(val || "").toString().replace(/"/g, '""')}"`).join(";"),
+        ),
+      ].join("\n");
+
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "relatorio_ativos.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Relatório com ${records.length} ativos exportado com sucesso!`);
+    } catch (err) {
+      console.error("Erro ao exportar relatório de ativos", err);
+      toast.error("Erro ao gerar ou exportar relatório.");
+    }
   }
 
   return (
@@ -213,7 +279,7 @@ function RelatoriosPage() {
             className="rounded-lg border bg-background px-3 py-2.5 text-sm outline-none focus:border-info"
           >
             <option value="">Todos Setores</option>
-            {setores.map((s) => (
+            {setoresDb.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
@@ -244,9 +310,7 @@ function RelatoriosPage() {
       <section className="rounded-2xl border bg-card p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Histórico e Auditoria</h2>
-          <span className="text-xs text-muted-foreground">
-            {filteredAuditoria.length} registros
-          </span>
+          <span className="text-xs text-muted-foreground">{mappedLogs.length} registros</span>
         </div>
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
@@ -259,7 +323,7 @@ function RelatoriosPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredAuditoria.map((a, i) => (
+              {mappedLogs.map((a, i) => (
                 <tr key={i} className="border-t">
                   <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap min-w-[140px]">
                     {a.data}
@@ -280,9 +344,8 @@ function RelatoriosPage() {
           </table>
         </div>
 
-        {/* Mobile Cards */}
         <div className="block md:hidden space-y-3">
-          {filteredAuditoria.map((a, i) => (
+          {mappedLogs.map((a, i) => (
             <div key={i} className="rounded-xl border bg-card p-4 space-y-2 text-sm">
               <div className="flex items-center justify-between border-b pb-2">
                 <span className="font-mono text-xs font-semibold text-foreground">{a.ativo}</span>
