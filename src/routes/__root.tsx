@@ -79,10 +79,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "BitEstoque — Gestão de Ativos" },
-      { name: "description", content: "Sistema inteligente para controle, rastreabilidade e auditoria de inventário de TI." },
+      {
+        name: "description",
+        content:
+          "Sistema inteligente para controle, rastreabilidade e auditoria de inventário de TI.",
+      },
       { name: "author", content: "SMARTins Software Solutions" },
       { property: "og:title", content: "BitEstoque — Gestão de Ativos" },
-      { property: "og:description", content: "Sistema inteligente para controle, rastreabilidade e auditoria de inventário de TI." },
+      {
+        property: "og:description",
+        content:
+          "Sistema inteligente para controle, rastreabilidade e auditoria de inventário de TI.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },

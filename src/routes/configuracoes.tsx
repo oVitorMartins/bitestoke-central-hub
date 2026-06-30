@@ -313,47 +313,54 @@ function UsuariosTab() {
                   Carregando usuários...
                 </td>
               </tr>
-            ) : usuarios.map((u) => {
-              const rawPerfil = Array.isArray(u.perfil) ? u.perfil[0] : u.perfil;
-              const displayPerfil = rawPerfil || "Técnico";
-              const perfilClass = displayPerfil === "Admin"
-                ? "bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300 ring-1 ring-purple-600/20"
-                : "bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300 ring-1 ring-teal-600/20";
+            ) : (
+              usuarios.map((u) => {
+                const rawPerfil = Array.isArray(u.perfil) ? u.perfil[0] : u.perfil;
+                const displayPerfil = rawPerfil || "Técnico";
+                const perfilClass =
+                  displayPerfil === "Admin"
+                    ? "bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300 ring-1 ring-purple-600/20"
+                    : "bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300 ring-1 ring-teal-600/20";
 
-              return (
-                <tr key={u.id} className="border-t">
-                  <td className="px-4 py-3 font-semibold">{u.name || (u as any).nome || "N/A"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {u.created ? u.created.slice(0, 10) : "N/A"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold ${perfilClass}`}>
-                      {displayPerfil}
-                    </span>
-                  </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-1">
-                    <button
-                      onClick={() => handleOpenResetModal(u)}
-                      className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
-                      aria-label="Redefinir Senha"
-                      title="Redefinir Senha"
-                    >
-                      <Key className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleRemover(u.id)}
-                      className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-danger cursor-pointer"
-                      aria-label="Remover"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
+                return (
+                  <tr key={u.id} className="border-t">
+                    <td className="px-4 py-3 font-semibold">
+                      {u.name || (u as any).nome || "N/A"}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {u.created ? u.created.slice(0, 10) : "N/A"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold ${perfilClass}`}
+                      >
+                        {displayPerfil}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => handleOpenResetModal(u)}
+                          className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                          aria-label="Redefinir Senha"
+                          title="Redefinir Senha"
+                        >
+                          <Key className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleRemover(u.id)}
+                          className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-danger cursor-pointer"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
             {!loading && usuarios.length === 0 && (
               <tr className="border-t">
                 <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
@@ -413,9 +420,7 @@ function UsuariosTab() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">
-                Senha Inicial
-              </label>
+              <label className="text-xs font-semibold text-muted-foreground">Senha Inicial</label>
               <input
                 type="password"
                 value={senha}
@@ -428,9 +433,7 @@ function UsuariosTab() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">
-                Confirmar Senha
-              </label>
+              <label className="text-xs font-semibold text-muted-foreground">Confirmar Senha</label>
               <input
                 type="password"
                 value={senhaConfirm}
@@ -467,7 +470,11 @@ function UsuariosTab() {
           <DialogHeader>
             <DialogTitle>Redefinir Senha</DialogTitle>
             <DialogDescription>
-              Defina uma nova senha para o usuário <strong className="text-foreground">{resetUser?.name || (resetUser as any)?.nome}</strong>.
+              Defina uma nova senha para o usuário{" "}
+              <strong className="text-foreground">
+                {resetUser?.name || (resetUser as any)?.nome}
+              </strong>
+              .
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleConfirmResetSenha} className="space-y-4 py-2">
@@ -485,7 +492,9 @@ function UsuariosTab() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Confirmar Nova Senha</label>
+              <label className="text-xs font-semibold text-muted-foreground">
+                Confirmar Nova Senha
+              </label>
               <input
                 type="password"
                 value={novaSenhaConfirm}
@@ -635,10 +644,9 @@ function FornecedoresTab() {
     }
 
     try {
-      await pb.collection("fornecedores").create(
-        { nome: n, contato: contato.trim() || "" },
-        { $autoCancel: false }
-      );
+      await pb
+        .collection("fornecedores")
+        .create({ nome: n, contato: contato.trim() || "" }, { $autoCancel: false });
       setNome("");
       setContato("");
       toast.success(`${n} adicionado com sucesso!`);
@@ -664,7 +672,9 @@ function FornecedoresTab() {
     <>
       <header className="mb-4">
         <h2 className="text-lg font-semibold">Fornecedores de Locação</h2>
-        <p className="text-sm text-muted-foreground">Empresas parceiras de locação de equipamentos.</p>
+        <p className="text-sm text-muted-foreground">
+          Empresas parceiras de locação de equipamentos.
+        </p>
       </header>
 
       <form onSubmit={add} className="mb-4 flex flex-col sm:flex-row gap-2">
@@ -790,7 +800,9 @@ function SetoresTab() {
     <>
       <header className="mb-4">
         <h2 className="text-lg font-semibold">Setores</h2>
-        <p className="text-sm text-muted-foreground">Setores do hospital usados para localização dos ativos.</p>
+        <p className="text-sm text-muted-foreground">
+          Setores do hospital usados para localização dos ativos.
+        </p>
       </header>
 
       <form onSubmit={add} className="mb-4 flex gap-2">

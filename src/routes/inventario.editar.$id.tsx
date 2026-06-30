@@ -14,7 +14,8 @@ export const Route = createFileRoute("/inventario/editar/$id")({
         $autoCancel: false,
       });
 
-      const displayStatus = (record.status === "Em Estoque" || record.status === "Estoque") ? "Estoque" : record.status;
+      const displayStatus =
+        record.status === "Em Estoque" || record.status === "Estoque" ? "Estoque" : record.status;
       const categoryName = record.expand?.categoria?.nome || record.categoria_nome || "";
 
       const mappedAtivo = {
@@ -27,8 +28,13 @@ export const Route = createFileRoute("/inventario/editar/$id")({
         serie: record.num_serie || record.numero_serie || "",
         status: displayStatus,
         localizacao: record.setor || record.localizacao || "",
-        dataAquisicao: record.data_aquisicao ? new Date(record.data_aquisicao).toLocaleDateString("pt-BR") : "",
-        valor: (record.valor_ativo !== undefined ? record.valor_ativo : record.valor) !== undefined ? (record.valor_ativo !== undefined ? record.valor_ativo : record.valor).toString() : "",
+        dataAquisicao: record.data_aquisicao
+          ? new Date(record.data_aquisicao).toLocaleDateString("pt-BR")
+          : "",
+        valor:
+          (record.valor_ativo !== undefined ? record.valor_ativo : record.valor) !== undefined
+            ? (record.valor_ativo !== undefined ? record.valor_ativo : record.valor).toString()
+            : "",
         notaFiscal: record.nota_fiscal || "",
         criticidade: record.criticidade || "Baixa",
         observacoes: record.observacoes || "",
@@ -146,7 +152,9 @@ function SelectWithId({
       >
         <option value="">Selecione...</option>
         {options.map((o) => (
-          <option key={o.id} value={o.id}>{o.nome}</option>
+          <option key={o.id} value={o.id}>
+            {o.nome}
+          </option>
         ))}
       </select>
       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -254,15 +262,23 @@ function EditarAtivoPage() {
     setValorCents(parseDigits(e.target.value));
   }
 
-
-
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (isSubmitting) return;
 
     const newErrors: Record<string, string> = {};
-    if (!nome.trim()) newErrors.nome = "Informe o nome do ativo.";
-    if (!patrimonio.trim()) newErrors.patrimonio = "Informe o código de patrimônio.";
+    if (!nome.trim()) {
+      newErrors.nome = "Informe o nome do ativo.";
+    } else if (nome.length > 30) {
+      newErrors.nome = "O nome deve ter no máximo 30 caracteres.";
+    }
+
+    if (!patrimonio.trim()) {
+      newErrors.patrimonio = "Informe o código de patrimônio.";
+    } else if (patrimonio.length > 10) {
+      newErrors.patrimonio = "O patrimônio deve ter no máximo 10 caracteres.";
+    }
+
     if (!serie.trim()) newErrors.serie = "Informe o número de série.";
     if (!categoria) newErrors.categoria = "Selecione a categoria.";
     if (!localizacao) newErrors.localizacao = "Selecione a localização.";
@@ -327,7 +343,7 @@ function EditarAtivoPage() {
         nota_fiscal: notaFiscal,
         criticidade,
         is_alugado: alugado,
-        fornecedor_locacao: alugado ? (fornecedor || null) : null,
+        fornecedor_locacao: alugado ? fornecedor || null : null,
         observacoes: observacoes,
       };
 
@@ -339,12 +355,20 @@ function EditarAtivoPage() {
 
       // 1. Mudança de Setor / Localidade
       if (ativo.localizacao !== localizacao) {
-        await createAuditLog(ativo.id, "Movimentação", `Ativo transferido para o setor ${localizacao}.`);
+        await createAuditLog(
+          ativo.id,
+          "Movimentação",
+          `Ativo transferido para o setor ${localizacao}.`,
+        );
       }
 
       // 2. Mudança de Status Geral
       if (mappedOldStatus !== mappedNewStatus) {
-        await createAuditLog(ativo.id, "Alteração de Status", `Status alterado de ${mappedOldStatus} para ${mappedNewStatus}.`);
+        await createAuditLog(
+          ativo.id,
+          "Alteração de Status",
+          `Status alterado de ${mappedOldStatus} para ${mappedNewStatus}.`,
+        );
       }
 
       // 3. Mudança de Características
@@ -353,10 +377,14 @@ function EditarAtivoPage() {
         characteristicsChanges.push(`Nome "${ativo.nome}" foi alterado para "${nome}"`);
       }
       if (ativo.categoria !== categoria) {
-        characteristicsChanges.push(`Categoria "${ativo.categoria}" foi alterada para "${categoria}"`);
+        characteristicsChanges.push(
+          `Categoria "${ativo.categoria}" foi alterada para "${categoria}"`,
+        );
       }
       if (ativo.patrimonio !== patrimonio) {
-        characteristicsChanges.push(`Patrimônio "${ativo.patrimonio}" foi alterado para "${patrimonio}"`);
+        characteristicsChanges.push(
+          `Patrimônio "${ativo.patrimonio}" foi alterado para "${patrimonio}"`,
+        );
       }
 
       if (characteristicsChanges.length > 0) {
@@ -401,6 +429,7 @@ function EditarAtivoPage() {
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
                     className={errors.nome ? inputErrorCls : inputCls}
+                    maxLength={30}
                   />
                 </Field>
                 <div className="grid grid-cols-2 gap-4">
@@ -427,6 +456,7 @@ function EditarAtivoPage() {
                       value={patrimonio}
                       onChange={(e) => setPatrimonio(e.target.value)}
                       className={`${errors.patrimonio ? inputErrorCls : inputCls} flex-1 font-mono`}
+                      maxLength={10}
                     />
                     <button
                       type="button"
@@ -508,8 +538,6 @@ function EditarAtivoPage() {
           </div>
 
           <div className="space-y-5">
-
-
             <Card icon={Tag} title="Classificação">
               <div className="space-y-4">
                 <Field label="Categoria" required error={errors.categoria}>

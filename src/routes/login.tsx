@@ -60,9 +60,7 @@ function LoginPage() {
             alt="BitEstoque Logo"
             className="h-10 w-10 object-contain"
           />
-          <span className="text-xl font-bold text-white tracking-tight">
-            BitEstoque
-          </span>
+          <span className="text-xl font-bold text-white tracking-tight">BitEstoque</span>
         </div>
 
         <div className="space-y-4 relative z-10 max-w-md">

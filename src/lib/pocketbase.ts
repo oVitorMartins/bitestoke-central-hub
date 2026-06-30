@@ -6,13 +6,16 @@ export async function createAuditLog(ativoId: string, acao: string, descricao: s
   try {
     const currentUserId = pb.authStore.model?.id || null;
     const currentUserName = pb.authStore.model?.name || null;
-    await pb.collection("auditoria").create({
-      ...(currentUserId ? { usuario: currentUserId } : {}),
-      responsavel: currentUserName,
-      acao,
-      descricao,
-      ativo_vinculado: ativoId,
-    }, { $autoCancel: false });
+    await pb.collection("auditoria").create(
+      {
+        ...(currentUserId ? { usuario: currentUserId } : {}),
+        responsavel: currentUserName,
+        acao,
+        descricao,
+        ativo_vinculado: ativoId,
+      },
+      { $autoCancel: false },
+    );
   } catch (err) {
     console.error("Failed to create central audit log", err);
   }

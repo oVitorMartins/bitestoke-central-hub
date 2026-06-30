@@ -190,7 +190,7 @@ function getActionBadgeClass(action: string) {
 
 function mapRecordToAtivo(r: any): Ativo {
   const categoryName = r.expand?.categoria?.nome || r.categoria_nome || "Geral";
-  
+
   let displayStatus: Status = "Estoque";
   if (r.status === "Em Uso" || r.status === "Em Manutenção" || r.status === "Descarte") {
     displayStatus = r.status as Status;
@@ -212,7 +212,10 @@ function mapRecordToAtivo(r: any): Ativo {
     status: displayStatus,
     localizacao: r.expand?.setor?.nome || r.localizacao || "TI",
     dataAquisicao: r.data_aquisicao ? new Date(r.data_aquisicao).toLocaleDateString("pt-BR") : "",
-    valor: (r.valor_ativo !== undefined ? r.valor_ativo : r.valor) !== undefined ? (r.valor_ativo !== undefined ? r.valor_ativo : r.valor).toString() : "",
+    valor:
+      (r.valor_ativo !== undefined ? r.valor_ativo : r.valor) !== undefined
+        ? (r.valor_ativo !== undefined ? r.valor_ativo : r.valor).toString()
+        : "",
     notaFiscal: r.nota_fiscal || "",
     criticidade: (r.criticidade as Criticidade) || "Baixa",
     observacoes: r.observacoes || "",
@@ -323,8 +326,6 @@ function InventarioPage() {
   const [printSetor, setPrintSetor] = useState("");
   const [ativosParaImprimir, setAtivosParaImprimir] = useState<Ativo[]>([]);
 
-
-
   const getPerfilValue = (m: any): string => {
     if (!m?.perfil) return "";
     if (Array.isArray(m.perfil)) {
@@ -336,9 +337,7 @@ function InventarioPage() {
   const perfilValue = getPerfilValue(model);
 
   const canDispose =
-    perfilValue === "Administrador" ||
-    perfilValue === "Admin" ||
-    perfilValue === "Gestor";
+    perfilValue === "Administrador" || perfilValue === "Admin" || perfilValue === "Gestor";
 
   const handleDisposalClick = (a: Ativo) => {
     setDisposalAtivo(a);
@@ -357,9 +356,13 @@ function InventarioPage() {
     let statusUpdated = false;
     try {
       // 1. Update active status to "Descarte" in PocketBase
-      await pb.collection("ativos").update(disposalAtivo.id, {
-        status: "Descarte",
-      }, { $autoCancel: false });
+      await pb.collection("ativos").update(
+        disposalAtivo.id,
+        {
+          status: "Descarte",
+        },
+        { $autoCancel: false },
+      );
       statusUpdated = true;
     } catch (err) {
       console.error("Failed to update asset status in PocketBase", err);
@@ -378,7 +381,13 @@ function InventarioPage() {
     );
 
     const newLog = {
-      data: new Date().toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+      data: new Date().toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
       responsavel: currentUser?.nome || "Admin Usuário",
       ativo: disposalAtivo.patrimonio,
       movimentacao: `Descartou ativo. Motivo: ${disposalReason.trim()}`,
@@ -400,6 +409,30 @@ function InventarioPage() {
       return () => clearTimeout(timer);
     }
   }, [ativosParaImprimir]);
+
+  const handlePrintUnit = (ativo: Ativo) => {
+    toast("Aguardando carregamento do QR Code...");
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
+      `ATIVO:${ativo.id}|PAT:${ativo.patrimonio}|SN:${ativo.serie}`,
+    )}`;
+    const img = new Image();
+    img.src = qrUrl;
+
+    const triggerPrint = () => {
+      setAtivosParaImprimir([ativo]);
+    };
+
+    if (img.complete) {
+      triggerPrint();
+    } else {
+      img.onload = () => {
+        triggerPrint();
+      };
+      img.onerror = () => {
+        triggerPrint();
+      };
+    }
+  };
 
   const handlePrintBatch = () => {
     const list = ativosList.filter((a) => {
@@ -809,7 +842,10 @@ function InventarioPage() {
                 <Detail label="Categoria" value={viewAtivo.categoria} />
                 <Detail label="Localização" value={viewAtivo.localizacao} />
                 {viewAtivo.expand?.fornecedor_locacao?.nome && (
-                  <Detail label="Fornecedor de Locação" value={viewAtivo.expand.fornecedor_locacao.nome} />
+                  <Detail
+                    label="Fornecedor de Locação"
+                    value={viewAtivo.expand.fornecedor_locacao.nome}
+                  />
                 )}
                 <Detail label="Patrimônio" value={viewAtivo.patrimonio} mono />
                 <Detail label="Número de Série (S/N)" value={viewAtivo.serie} mono />
@@ -835,19 +871,33 @@ function InventarioPage() {
                   Histórico / Linha do Tempo
                 </div>
                 {historicoLogs.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Nenhum registro de auditoria encontrado para este ativo.</p>
+                  <p className="text-xs text-muted-foreground italic">
+                    Nenhum registro de auditoria encontrado para este ativo.
+                  </p>
                 ) : (
                   <div className="space-y-3.5 pl-1.5 relative border-l border-zinc-200 dark:border-zinc-800 ml-1">
                     {historicoLogs.map((log) => (
                       <div key={log.id} className="relative pl-4 text-xs">
                         <div className="absolute -left-[7px] top-1.5 h-2 w-2 rounded-full bg-zinc-400 dark:bg-zinc-600" />
                         <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground font-medium mb-0.5">
-                          <span>{new Date(log.created).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                          <span className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${getActionBadgeClass(log.acao)}`}>
+                          <span>
+                            {new Date(log.created).toLocaleString("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          <span
+                            className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${getActionBadgeClass(log.acao)}`}
+                          >
                             {log.acao}
                           </span>
                         </div>
-                        <p className="text-foreground/90 font-medium leading-relaxed">{log.descricao}</p>
+                        <p className="text-foreground/90 font-medium leading-relaxed">
+                          {log.descricao}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -918,7 +968,7 @@ function InventarioPage() {
                 Fechar
               </button>
               <button
-                onClick={() => window.print()}
+                onClick={() => handlePrintUnit(qrAtivo)}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-foreground py-2.5 text-sm font-semibold text-background hover:opacity-90"
               >
                 <Printer className="h-4 w-4" />

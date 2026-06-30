@@ -108,7 +108,9 @@ function SelectWithId({
       >
         <option value="">Selecione...</option>
         {options.map((o) => (
-          <option key={o.id} value={o.id}>{o.nome}</option>
+          <option key={o.id} value={o.id}>
+            {o.nome}
+          </option>
         ))}
       </select>
       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -196,15 +198,23 @@ function NovoAtivoPage() {
     setValorCents(parseDigits(e.target.value));
   }
 
-
-
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (isSubmitting) return;
 
     const newErrors: Record<string, string> = {};
-    if (!nome.trim()) newErrors.nome = "Informe o nome do ativo.";
-    if (!patrimonio.trim()) newErrors.patrimonio = "Informe o código de patrimônio.";
+    if (!nome.trim()) {
+      newErrors.nome = "Informe o nome do ativo.";
+    } else if (nome.length > 30) {
+      newErrors.nome = "O nome deve ter no máximo 30 caracteres.";
+    }
+
+    if (!patrimonio.trim()) {
+      newErrors.patrimonio = "Informe o código de patrimônio.";
+    } else if (patrimonio.length > 10) {
+      newErrors.patrimonio = "O patrimônio deve ter no máximo 10 caracteres.";
+    }
+
     if (!serie.trim()) newErrors.serie = "Informe o número de série.";
     if (!categoria) newErrors.categoria = "Selecione a categoria.";
     if (!localizacao) newErrors.localizacao = "Selecione a localização.";
@@ -224,7 +234,7 @@ function NovoAtivoPage() {
 
     setErrors({});
     setIsSubmitting(true);
-    
+
     try {
       // Validate duplicate patrimonio and serial number
       const duplicates = await pb.collection("ativos").getList(1, 1, {
@@ -258,31 +268,34 @@ function NovoAtivoPage() {
       const nomeDoEstado = nome;
       const patrimonioDoEstado = patrimonio;
       const idDaCategoriaSelecionada = categoriaId;
-      const statusSelecionado = (status === "Estoque" || !status) ? "Em Estoque" : status;
+      const statusSelecionado = status === "Estoque" || !status ? "Em Estoque" : status;
 
-      const createdRecord = await pb.collection('ativos').create({
-        nome: nomeDoEstado,
-        codigo_patrimonio: patrimonioDoEstado,
-        categoria: idDaCategoriaSelecionada,
-        status: statusSelecionado,
-        setor: localizacao || null,
-        marca_modelo: marcaModelo,
-        num_serie: serie,
-        data_aquisicao: dataAquisicao ? new Date(dataAquisicao).toISOString() : null,
-        valor_ativo: valorCents / 100,
-        nota_fiscal: notaFiscal,
-        criticidade,
-        is_alugado: alugado,
-        fornecedor_locacao: alugado ? (fornecedor || null) : null,
-        observacoes,
-      }, {
-        $autoCancel: false
-      });
+      const createdRecord = await pb.collection("ativos").create(
+        {
+          nome: nomeDoEstado,
+          codigo_patrimonio: patrimonioDoEstado,
+          categoria: idDaCategoriaSelecionada,
+          status: statusSelecionado,
+          setor: localizacao || null,
+          marca_modelo: marcaModelo,
+          num_serie: serie,
+          data_aquisicao: dataAquisicao ? new Date(dataAquisicao).toISOString() : null,
+          valor_ativo: valorCents / 100,
+          nota_fiscal: notaFiscal,
+          criticidade,
+          is_alugado: alugado,
+          fornecedor_locacao: alugado ? fornecedor || null : null,
+          observacoes,
+        },
+        {
+          $autoCancel: false,
+        },
+      );
 
       await createAuditLog(
         createdRecord.id,
         "Cadastro",
-        `Dispositivo ${nomeDoEstado} (Patrimônio: ${patrimonioDoEstado}) foi cadastrado no sistema e inserido no estoque.`
+        `Dispositivo ${nomeDoEstado} (Patrimônio: ${patrimonioDoEstado}) foi cadastrado no sistema e inserido no estoque.`,
       );
 
       toast.success("Ativo cadastrado com sucesso!", {
@@ -325,6 +338,7 @@ function NovoAtivoPage() {
                     onChange={(e) => setNome(e.target.value)}
                     className={errors.nome ? inputErrorCls : inputCls}
                     placeholder="Ex: Macbook Pro 16' M3"
+                    maxLength={30}
                   />
                 </Field>
                 <div className="grid grid-cols-2 gap-4">
@@ -354,6 +368,7 @@ function NovoAtivoPage() {
                       onChange={(e) => setPatrimonio(e.target.value)}
                       className={`${errors.patrimonio ? inputErrorCls : inputCls} flex-1 font-mono`}
                       placeholder="Ex: AST-2024-001"
+                      maxLength={10}
                     />
                     <button
                       type="button"
@@ -438,8 +453,6 @@ function NovoAtivoPage() {
 
           {/* RIGHT */}
           <div className="space-y-5">
-
-
             <Card icon={Tag} title="Classificação">
               <div className="space-y-4">
                 <Field label="Categoria" required error={errors.categoria}>

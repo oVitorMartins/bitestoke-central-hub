@@ -1,6 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
-import { Key, Plus, Search, X, ChevronLeft, ChevronRight, Download, Pencil, Trash2, Monitor } from "lucide-react";
+import {
+  Key,
+  Plus,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Pencil,
+  Trash2,
+  Monitor,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { toast } from "sonner";
 import { pb } from "@/lib/pocketbase";
@@ -176,8 +187,6 @@ function LicencasPage() {
     fetchLicencas();
   }, []);
 
-
-
   const handleAddLicence = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLicenceSoftware.trim()) {
@@ -322,13 +331,19 @@ function LicencasPage() {
               <tbody>
                 {loading ? (
                   <tr className="border-t">
-                    <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                    <td
+                      colSpan={6}
+                      className="px-5 py-10 text-center text-sm text-muted-foreground"
+                    >
                       Carregando licenças...
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr className="border-t">
-                    <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                    <td
+                      colSpan={6}
+                      className="px-5 py-10 text-center text-sm text-muted-foreground"
+                    >
                       Nenhuma licença encontrada.
                     </td>
                   </tr>
@@ -339,9 +354,10 @@ function LicencasPage() {
                       <td className="px-3 py-4 text-muted-foreground">{l.chaves_compradas}</td>
                       <td className="px-3 py-4 text-muted-foreground">{l.chaves_em_uso}</td>
                       <td className="px-3 py-4 text-muted-foreground">
-                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                          l.preco || 0,
-                        )}
+                        {new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(l.preco || 0)}
                       </td>
                       <td className="px-3 py-4 text-muted-foreground">
                         {l.data_expiracao ? l.data_expiracao.slice(0, 10) : "N/A"}
@@ -401,8 +417,8 @@ function LicencasPage() {
         <div className="space-y-2 max-w-sm">
           <h2 className="text-lg font-bold text-foreground">Acesso Restrito ao Desktop</h2>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Por motivos de segurança e usabilidade, a aba de Licenças está disponível apenas
-            para computadores. Por favor, acesse através de um desktop.
+            Por motivos de segurança e usabilidade, a aba de Licenças está disponível apenas para
+            computadores. Por favor, acesse através de um desktop.
           </p>
         </div>
       </div>
@@ -618,7 +634,8 @@ function LicencasPage() {
             <DialogTitle>Excluir Licença</DialogTitle>
             <DialogDescription>
               Tem certeza que deseja excluir a licença do software{" "}
-              <strong className="text-foreground">{licenceToDelete?.nome_software}</strong>? Esta ação não pode ser desfeita.
+              <strong className="text-foreground">{licenceToDelete?.nome_software}</strong>? Esta
+              ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="pt-4 gap-2 sm:gap-0">

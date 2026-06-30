@@ -76,10 +76,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <Link
                       key={item.label}
                       to={item.to}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${active
-                        ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50 font-semibold"
-                        : "text-sidebar-foreground hover:bg-muted"
-                        }`}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                        active
+                          ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50 font-semibold"
+                          : "text-sidebar-foreground hover:bg-muted"
+                      }`}
                     >
                       <Icon className="h-4 w-4" />
                       {item.label}
@@ -136,10 +137,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.label}
                   to={item.to}
-                  className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 text-[10px] font-medium transition-colors ${active
-                    ? "text-zinc-950 dark:text-zinc-50 font-semibold"
-                    : "text-sidebar-foreground hover:text-foreground"
-                    }`}
+                  className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 text-[10px] font-medium transition-colors ${
+                    active
+                      ? "text-zinc-950 dark:text-zinc-50 font-semibold"
+                      : "text-sidebar-foreground hover:text-foreground"
+                  }`}
                 >
                   <Icon className="h-5 w-5" />
                   <span>{item.label}</span>

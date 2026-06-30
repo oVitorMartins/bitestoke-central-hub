@@ -74,13 +74,13 @@ function Dashboard() {
       try {
         setIsLoading(true);
         const [ativosRecord, licencasRecord, auditoriaRecord] = await Promise.all([
-          pb.collection('ativos').getFullList({ expand: 'categoria,setor', $autoCancel: false }),
-          pb.collection('licencas').getFullList({ $autoCancel: false }),
+          pb.collection("ativos").getFullList({ expand: "categoria,setor", $autoCancel: false }),
+          pb.collection("licencas").getFullList({ $autoCancel: false }),
           pb.collection("auditoria").getFullList({
             sort: "-created",
             expand: "usuario,ativo_vinculado",
             $autoCancel: false,
-          })
+          }),
         ]);
         setAtivosDb(ativosRecord);
         setLicencasDb(licencasRecord);
@@ -96,7 +96,9 @@ function Dashboard() {
 
   const totalAtivos = ativosDb.length;
   const emUso = ativosDb.filter((a) => a.status === "Em Uso" || a.status === "Uso").length;
-  const emManutencao = ativosDb.filter((a) => a.status === "Em Manutenção" || a.status === "Manutenção").length;
+  const emManutencao = ativosDb.filter(
+    (a) => a.status === "Em Manutenção" || a.status === "Manutenção",
+  ).length;
   const licencasAtivas = licencasDb.reduce((acc, curr) => acc + (curr.chaves_em_uso || 0), 0);
 
   const pctEmUso = totalAtivos ? Math.round((emUso / totalAtivos) * 100) : 0;
@@ -106,11 +108,14 @@ function Dashboard() {
     const counts: Record<string, number> = {
       "Em Uso": 0,
       "Em Manutenção": 0,
-      "Estoque": 0,
-      "Descarte": 0
+      Estoque: 0,
+      Descarte: 0,
     };
     ativosDb.forEach((a) => {
-      const s = (a.status === "Em Estoque" || a.status === "Estoque" || a.status === "Disponível") ? "Estoque" : a.status;
+      const s =
+        a.status === "Em Estoque" || a.status === "Estoque" || a.status === "Disponível"
+          ? "Estoque"
+          : a.status;
       if (s in counts) {
         counts[s]++;
       } else {
@@ -123,11 +128,11 @@ function Dashboard() {
   const statusPercentages = useMemo(() => {
     const total = ativosDb.length;
     if (total === 0) return [];
-    
+
     return Object.entries(statusCounts).map(([status, count]) => ({
       status,
       count,
-      pct: Math.round((count / total) * 100)
+      pct: Math.round((count / total) * 100),
     }));
   }, [statusCounts, ativosDb]);
 
@@ -135,10 +140,14 @@ function Dashboard() {
     if (ativosDb.length === 0) return "bg-muted";
     let accum = 0;
     const slices = statusPercentages.map((item) => {
-      const color = 
-        item.status === "Em Uso" ? "#22c55e" :
-        item.status === "Em Manutenção" ? "#f59e0b" :
-        item.status === "Estoque" ? "#3b82f6" : "#71717a";
+      const color =
+        item.status === "Em Uso"
+          ? "#22c55e"
+          : item.status === "Em Manutenção"
+            ? "#f59e0b"
+            : item.status === "Estoque"
+              ? "#3b82f6"
+              : "#71717a";
       const start = accum;
       accum += item.pct;
       return `${color} ${start}% ${accum}%`;
@@ -158,7 +167,7 @@ function Dashboard() {
     return sorted.slice(0, 5).map(([nome, count]) => ({
       nome,
       quantidade: count,
-      percentual: total ? Math.round((count / total) * 100) : 0
+      percentual: total ? Math.round((count / total) * 100) : 0,
     }));
   }, [ativosDb]);
 
@@ -195,7 +204,10 @@ function Dashboard() {
       {isLoading ? (
         <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="animate-pulse rounded-2xl border bg-card p-5 h-[145px] flex flex-col justify-between">
+            <div
+              key={i}
+              className="animate-pulse rounded-2xl border bg-card p-5 h-[145px] flex flex-col justify-between"
+            >
               <div className="h-4 w-24 bg-muted rounded animate-pulse" />
               <div className="h-10 w-16 bg-muted rounded animate-pulse" />
               <div className="h-3 w-full bg-muted rounded animate-pulse" />
@@ -211,7 +223,10 @@ function Dashboard() {
             footer={
               <div className="space-y-1.5">
                 <div className="h-1.5 w-full rounded-full bg-zinc-100 dark:bg-zinc-800">
-                  <div className="h-full rounded-full bg-slate-600 dark:bg-slate-400" style={{ width: `${pctEmUso}%` }} />
+                  <div
+                    className="h-full rounded-full bg-slate-600 dark:bg-slate-400"
+                    style={{ width: `${pctEmUso}%` }}
+                  />
                 </div>
                 <div className="text-xs text-muted-foreground">{pctEmUso}% da capacidade</div>
               </div>
@@ -226,7 +241,9 @@ function Dashboard() {
                 ALERTA
               </span>
             }
-            footer={<div className="text-xs text-muted-foreground">{pctEmManutencao}% em reparos</div>}
+            footer={
+              <div className="text-xs text-muted-foreground">{pctEmManutencao}% em reparos</div>
+            }
           />
           <MetricCard
             label="Licenças Ativas"
@@ -302,12 +319,24 @@ function Dashboard() {
                   return (
                     <tr key={i} className="border-t">
                       <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap min-w-[140px]">
-                        {new Date(log.created).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        {new Date(log.created).toLocaleString("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </td>
-                      <td className="py-3.5 pr-4 font-medium text-foreground">{log.responsavel || user?.name || user?.nome || "Sistema / Admin"}</td>
-                      <td className="py-3.5 pr-4 font-mono text-xs">{asset ? `${asset.nome} (${asset.codigo_patrimonio})` : "Ativo Excluído"}</td>
+                      <td className="py-3.5 pr-4 font-medium text-foreground">
+                        {log.responsavel || user?.name || user?.nome || "Sistema / Admin"}
+                      </td>
+                      <td className="py-3.5 pr-4 font-mono text-xs">
+                        {asset ? `${asset.nome} (${asset.codigo_patrimonio})` : "Ativo Excluído"}
+                      </td>
                       <td className="py-3.5 text-muted-foreground">
-                        <span className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-bold mr-2 uppercase ${getActionBadgeClass(log.acao)}`}>
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-bold mr-2 uppercase ${getActionBadgeClass(log.acao)}`}
+                        >
                           {log.acao}
                         </span>
                         {log.descricao}
@@ -331,18 +360,28 @@ function Dashboard() {
                       {asset ? `${asset.nome} (${asset.codigo_patrimonio})` : "Ativo Excluído"}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(log.created).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      {new Date(log.created).toLocaleString("pt-BR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs pt-1">
                     <div>
                       <span className="text-muted-foreground block font-medium">Responsável:</span>
-                      <span className="text-foreground font-semibold">{log.responsavel || user?.name || user?.nome || "Sistema / Admin"}</span>
+                      <span className="text-foreground font-semibold">
+                        {log.responsavel || user?.name || user?.nome || "Sistema / Admin"}
+                      </span>
                     </div>
                     <div>
                       <span className="text-muted-foreground block font-medium">Movimentação:</span>
                       <span className="text-foreground">
-                        <span className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold mr-1.5 uppercase ${getActionBadgeClass(log.acao)}`}>
+                        <span
+                          className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold mr-1.5 uppercase ${getActionBadgeClass(log.acao)}`}
+                        >
                           {log.acao}
                         </span>
                         {log.descricao}
@@ -368,20 +407,29 @@ function Dashboard() {
             ) : (
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                 <div className="relative flex items-center justify-center shrink-0">
-                  <div className="h-24 w-24 rounded-full border border-border" style={{ background: conicGradientString }} />
+                  <div
+                    className="h-24 w-24 rounded-full border border-border"
+                    style={{ background: conicGradientString }}
+                  />
                   <div className="absolute h-14 w-14 rounded-full bg-card" />
                 </div>
                 <div className="space-y-1.5 text-xs">
                   {statusPercentages.map((item) => {
-                    const color = 
-                      item.status === "Em Uso" ? "bg-green-500" :
-                      item.status === "Em Manutenção" ? "bg-amber-500" :
-                      item.status === "Estoque" ? "bg-blue-500" : "bg-zinc-400";
+                    const color =
+                      item.status === "Em Uso"
+                        ? "bg-green-500"
+                        : item.status === "Em Manutenção"
+                          ? "bg-amber-500"
+                          : item.status === "Estoque"
+                            ? "bg-blue-500"
+                            : "bg-zinc-400";
                     return (
                       <div key={item.status} className="flex items-center gap-2">
                         <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
                         <span className="font-semibold text-foreground">{item.status}:</span>
-                        <span className="text-muted-foreground">{item.count} ({item.pct}%)</span>
+                        <span className="text-muted-foreground">
+                          {item.count} ({item.pct}%)
+                        </span>
                       </div>
                     );
                   })}
@@ -408,7 +456,9 @@ function Dashboard() {
                   <div key={s.nome} className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs font-semibold">
                       <span className="text-foreground truncate max-w-[120px]">{s.nome}</span>
-                      <span className="text-muted-foreground">{s.quantidade} ativos ({s.percentual}%)</span>
+                      <span className="text-muted-foreground">
+                        {s.quantidade} ativos ({s.percentual}%)
+                      </span>
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
                       <div
@@ -419,7 +469,9 @@ function Dashboard() {
                   </div>
                 ))}
                 {setorCounts.length === 0 && (
-                  <p className="text-center text-xs text-muted-foreground">Nenhum setor disponível.</p>
+                  <p className="text-center text-xs text-muted-foreground">
+                    Nenhum setor disponível.
+                  </p>
                 )}
               </div>
             )}

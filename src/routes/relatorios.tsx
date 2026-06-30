@@ -51,7 +51,8 @@ function RelatoriosPage() {
       try {
         const records = await pb.collection("auditoria").getFullList({
           sort: "-created",
-          expand: "usuario,ativo_vinculado,ativo_vinculado.categoria,ativo_vinculado.setor,ativo_vinculado.fornecedor_locacao",
+          expand:
+            "usuario,ativo_vinculado,ativo_vinculado.categoria,ativo_vinculado.setor,ativo_vinculado.fornecedor_locacao",
           $autoCancel: false,
         });
         setLogs(records);
@@ -104,7 +105,13 @@ function RelatoriosPage() {
 
       return {
         id: log.id,
-        data: new Date(log.created).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+        data: new Date(log.created).toLocaleString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
         responsavel: log.responsavel || user?.name || user?.nome || "Sistema / Admin",
         ativo: asset ? `${asset.nome} (${asset.codigo_patrimonio})` : "Ativo Excluído",
         movimentacao: log.descricao || "",
@@ -130,7 +137,13 @@ function RelatoriosPage() {
   function exportar() {
     const headers = ["Data/Hora", "Responsável", "Ativo Afetado", "Ação", "Movimentação"];
 
-    const rows = filteredAuditoria.map((a) => [a.data, a.responsavel, a.ativo, a.acao, a.movimentacao]);
+    const rows = filteredAuditoria.map((a) => [
+      a.data,
+      a.responsavel,
+      a.ativo,
+      a.acao,
+      a.movimentacao,
+    ]);
 
     const csvContent = [
       "sep=;",
@@ -248,11 +261,15 @@ function RelatoriosPage() {
             <tbody>
               {filteredAuditoria.map((a, i) => (
                 <tr key={i} className="border-t">
-                  <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap min-w-[140px]">{a.data}</td>
+                  <td className="py-3.5 pr-4 text-muted-foreground whitespace-nowrap min-w-[140px]">
+                    {a.data}
+                  </td>
                   <td className="py-3.5 pr-4 font-medium text-foreground">{a.responsavel}</td>
                   <td className="py-3.5 pr-4 font-mono text-xs">{a.ativo}</td>
                   <td className="py-3.5 text-muted-foreground">
-                    <span className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-bold mr-2 uppercase ${getActionBadgeClass(a.acao)}`}>
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-bold mr-2 uppercase ${getActionBadgeClass(a.acao)}`}
+                    >
                       {a.acao}
                     </span>
                     {a.movimentacao}
@@ -279,7 +296,9 @@ function RelatoriosPage() {
                 <div>
                   <span className="text-muted-foreground block font-medium">Movimentação:</span>
                   <span className="text-foreground">
-                    <span className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold mr-1.5 uppercase ${getActionBadgeClass(a.acao)}`}>
+                    <span
+                      className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold mr-1.5 uppercase ${getActionBadgeClass(a.acao)}`}
+                    >
                       {a.acao}
                     </span>
                     {a.movimentacao}
